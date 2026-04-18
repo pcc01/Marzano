@@ -35,7 +35,7 @@ from marzano_framework import (
     TAXONOMY, PASSION_MATH_CONNECTIONS,
 )
 from ai_provider import call_ai, get_provider_info
-from haystack_pipeline import rag, ingest_document, HAYSTACK_AVAILABLE
+from haystack_pipeline import rag, ingest_document, prewarm, HAYSTACK_AVAILABLE, INDEX_PATH
 from notifications import notif_manager, sse_event_generator
 from video_handler import process_video, is_video_file
 
@@ -59,8 +59,30 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     await init_db()
-    # Load RAG index if it exists
+
+    # Recover jobs that were mid-flight when the server last restarted.
+    # Without this they remain stuck in "processing" state forever.
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(IngestionJob).where(IngestionJob.status == "processing")
+        )
+        stuck = result.scalars().all()
+        if stuck:
+            for job in stuck:
+                job.status = "error"
+                job.error_message = (
+                    "Server restarted while this job was running — please re-upload."
+                )
+            await session.commit()
+            print(f"[APP] Recovered {len(stuck)} stuck ingestion job(s).")
+
+    # Load persisted RAG index (fast synchronous disk read)
     rag.load()
+
+    # Pre-warm embedding model in the background so the first /ingest
+    # does not stall waiting for the model to download.
+    asyncio.create_task(prewarm())
+
     print("[APP] Ready.")
 
 
@@ -276,6 +298,70 @@ async def rag_status():
 
 
 # ─────────────────────────────────────────────────────────────
+# Ingestion — additional management endpoints
+# ─────────────────────────────────────────────────────────────
+@app.post("/ingest/jobs/{job_id}/retry")
+async def retry_ingest_job(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Re-queue a failed or stuck job using the same file that was originally
+    stored. If the original temp file is gone (normal), instruct the user
+    to re-upload. This endpoint primarily resets the DB status and emits
+    a clear error notification so the UI reflects reality.
+    """
+    job = await get_job(session, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status == "processing":
+        raise HTTPException(
+            status_code=409,
+            detail="Job is currently processing. Wait for it to complete or restart the server to recover stuck jobs."
+        )
+    # Reset status so it shows as actionable in the UI
+    await session.execute(
+        update(IngestionJob)
+        .where(IngestionJob.id == job_id)
+        .values(status="pending", error_message=None, chunks_done=0, chunks_total=0)
+    )
+    await session.commit()
+    await notif_manager.broadcast(
+        "ingestion_started",
+        "Job reset",
+        f"'{job.filename}' has been reset to pending. Please re-upload the file to index it.",
+        {"job_id": job_id, "filename": job.filename, "progress": 0},
+    )
+    return {"status": "reset", "job_id": job_id, "message": "Re-upload the file to re-index."}
+
+
+@app.delete("/ingest/index")
+async def clear_index(session: AsyncSession = Depends(get_session)):
+    """
+    Delete the entire vector index. Useful when starting fresh or after
+    indexing the wrong document. Jobs table is NOT cleared.
+    """
+    try:
+        if INDEX_PATH.exists():
+            INDEX_PATH.unlink()
+        rag._texts   = []
+        rag._sources = []
+        rag._matrix  = None
+        rag.loaded    = False
+        rag.doc_count = 0
+        await notif_manager.broadcast(
+            "ingestion_complete",
+            "Index cleared",
+            "The knowledge base index has been deleted. Re-upload documents to rebuild it.",
+            {"progress": 0, "index_total": 0},
+        )
+        return {"status": "cleared"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─────────────────────────────────────────────────────────────
 # Assessments — create
 # ─────────────────────────────────────────────────────────────
 @app.post("/assess")
@@ -339,7 +425,7 @@ async def create_assessment(
 
     # Build prompts
     system_prompt = build_system_prompt(subject, student_passion, grade_level)
-    rag_context = rag.context_block(f"{subject} {student_passion} {artifact_description[:200]}")
+    rag_context = await rag.context_block(f"{subject} {student_passion} {artifact_description[:200]}")
     if rag_context:
         system_prompt += rag_context
 

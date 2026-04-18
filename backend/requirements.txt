@@ -12,10 +12,16 @@ sqlalchemy==2.0.35
 asyncpg==0.29.0
 psycopg2-binary==2.9.9
 
-# RAG (Haystack + embeddings)
-haystack-ai==2.27.0
-sentence-transformers==3.1.1
+# RAG — Haystack used for PDF parsing ONLY (not for embeddings)
+# The SentenceTransformers embedder wrapper inside Haystack >=2.7 passes
+# a `backend` kwarg that conflicts with sentence-transformers 3.x.
+# We use sentence-transformers directly to avoid this entirely.
+haystack-ai==2.9.0
 pypdf==4.3.1
+
+# Embeddings — used directly, bypassing Haystack's wrapper
+sentence-transformers==3.1.1
+numpy>=1.24.0
 
 # Async file handling
 aiofiles==24.1.0

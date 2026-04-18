@@ -3,7 +3,7 @@
 > AI-powered educational assessment grounded in **Marzano's New Taxonomy of Educational Objectives**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.2.0-blue)](https://github.com/pcc01/Marzano/releases)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](https://github.com/pcc01/Marzano/blob/main/CHANGELOG.md)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)](https://www.postgresql.org/)
@@ -192,6 +192,8 @@ Submissions from the student portal appear in the teacher dashboard with a blue 
 ## Haystack RAG — Indexing the Marzano Book
 
 The RAG pipeline lets the AI cite actual passages from the Marzano book in its feedback rather than relying solely on training data.
+
+> **v0.3.0 bug fix:** If you encountered `SentenceTransformer.__init__() got an unexpected keyword argument 'backend'` — this was a version conflict between `haystack-ai==2.27.0` and `sentence-transformers==3.1.1` fixed in v0.3.0. See [CHANGELOG.md](CHANGELOG.md) for the full diagnosis.
 
 **Why RAG instead of sending the whole book?**  
 A 200-page book is roughly 60,000–80,000 tokens. Sending it on every request is slow and expensive. Haystack chunks and embeds the book once (word-based splitting, 120-word chunks with 20-word overlap), then retrieves only the 3–4 most relevant passages per assessment. This works identically with Anthropic or Ollama.
