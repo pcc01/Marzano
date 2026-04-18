@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marzano Assessment Tool</title>
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.1);
+    --text: #1a1a18;
+    --muted: #6b6b65;
+    --accent: #4a3fc0;
+    --accent-light: #eeedfb;
+    --teal: #0f6e56;
+    --teal-light: #e1f5ee;
+    --amber: #854f0b;
+    --amber-light: #faeeda;
+    --coral: #993c1d;
+    --coral-light: #faece7;
+    --green: #3b6d11;
+    --green-light: #eaf3de;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+  /* Layout */
+  .app { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--surface); border-right: 0.5px solid var(--border); padding: 0; overflow-y: auto; }
+  .main { padding: 24px; overflow-y: auto; }
+
+  /* Sidebar */
+  .sidebar-header { padding: 20px 20px 16px; border-bottom: 0.5px solid var(--border); }
+  .sidebar-header h1 { font-size: 16px; font-weight: 600; color: var(--accent); margin-bottom: 2px; }
+  .sidebar-header p { font-size: 12px; color: var(--muted); }
+  .sidebar-section { padding: 12px 20px 8px; }
+  .sidebar-section h2 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--muted); transition: all 0.15s; }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+  .nav-icon { width: 16px; height: 16px; opacity: 0.7; }
+  
+  .assessment-list { padding: 0 12px 12px; }
+  .assessment-card-mini { padding: 10px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; border: 0.5px solid transparent; }
+  .assessment-card-mini:hover { background: var(--bg); border-color: var(--border); }
+  .assessment-card-mini.active { background: var(--accent-light); border-color: var(--accent); }
+  .assessment-card-mini .student { font-weight: 500; font-size: 13px; }
+  .assessment-card-mini .meta { font-size: 11px; color: var(--muted); display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+  .badge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+  .badge-approved { background: var(--green-light); color: var(--green); }
+  .badge-draft { background: var(--amber-light); color: var(--amber); }
+  .badge-level { background: var(--teal-light); color: var(--teal); }
+
+  /* Main panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .page-header { margin-bottom: 24px; }
+  .page-header h2 { font-size: 20px; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+
+  /* Form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 8px 12px; border: 0.5px solid var(--border);
+    border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--surface);
+    color: var(--text); transition: border-color 0.15s; outline: none;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .upload-area { border: 1.5px dashed var(--border); border-radius: 10px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--bg); }
+  .upload-area:hover { border-color: var(--accent); background: var(--accent-light); }
+  .upload-area p { color: var(--muted); font-size: 13px; }
+  .upload-area strong { color: var(--accent); }
+  #file-preview { margin-top: 8px; font-size: 12px; color: var(--teal); }
+
+  /* Buttons */
+  .btn { padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border); transition: all 0.15s; font-family: inherit; }
+  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface); color: var(--text); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-success { background: var(--teal); color: white; border-color: var(--teal); }
+  .btn-success:hover { opacity: 0.9; }
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+
+  /* Marzano Levels display */
+  .taxonomy-breakdown { display: flex; flex-direction: column; gap: 12px; }
+  .taxonomy-item { border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .taxonomy-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .taxonomy-system { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .taxonomy-level { font-weight: 600; font-size: 14px; }
+  .taxonomy-sublevel { font-size: 12px; color: var(--muted); }
+  .taxonomy-evidence { padding: 10px 16px 14px; background: var(--bg); font-size: 13px; color: var(--muted); border-top: 0.5px solid var(--border); }
+  .taxonomy-evidence strong { color: var(--text); display: block; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .rating-pill { padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .rating-advanced { background: var(--green-light); color: var(--green); }
+  .rating-proficient { background: var(--teal-light); color: var(--teal); }
+  .rating-developing { background: var(--amber-light); color: var(--amber); }
+  .rating-emerging { background: var(--coral-light); color: var(--coral); }
+  .rating-not { background: #f1efe8; color: #888780; }
+
+  /* System colors */
+  .system-self { background: var(--accent-light); border-left: 3px solid var(--accent); }
+  .system-meta { background: var(--teal-light); border-left: 3px solid var(--teal); }
+  .system-cognitive { background: var(--amber-light); border-left: 3px solid var(--amber); }
+
+  /* Summary boxes */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .summary-box { padding: 16px; background: var(--bg); border-radius: 10px; border: 0.5px solid var(--border); }
+  .summary-box h4 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 8px; }
+  .summary-box p { font-size: 13px; line-height: 1.6; }
+
+  /* Teacher edit area */
+  .teacher-section { background: var(--accent-light); border: 1px solid rgba(74, 63, 192, 0.2); border-radius: 12px; padding: 18px; margin-top: 16px; }
+  .teacher-section h3 { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+  /* Reasoning panel */
+  .reasoning { background: #f8f7f4; border: 0.5px solid var(--border); border-radius: 8px; padding: 14px; font-size: 12px; color: var(--muted); line-height: 1.7; font-style: italic; }
+
+  /* Loading */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Taxonomy reference */
+  .tax-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .tax-ref-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .tax-ref-header { padding: 12px 16px; font-weight: 600; font-size: 13px; }
+  .tax-ref-header.self { background: var(--accent-light); color: var(--accent); }
+  .tax-ref-header.meta { background: var(--teal-light); color: var(--teal); }
+  .tax-ref-header.retrieval { background: #f1efe8; color: #5f5e5a; }
+  .tax-ref-header.comprehension { background: var(--amber-light); color: var(--amber); }
+  .tax-ref-header.analysis { background: var(--coral-light); color: var(--coral); }
+  .tax-ref-header.utilization { background: var(--green-light); color: var(--green); }
+  .tax-ref-sublevel { padding: 8px 16px; border-top: 0.5px solid var(--border); }
+  .tax-ref-sublevel h4 { font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+  .tax-ref-sublevel .verbs { font-size: 11px; color: var(--muted); }
+
+  .alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+  .alert-error { background: var(--coral-light); color: var(--coral); border: 0.5px solid rgba(153,60,29,0.2); }
+  .alert-success { background: var(--green-light); color: var(--green); border: 0.5px solid rgba(59,109,17,0.2); }
+  
+  .empty-state { text-align: center; padding: 60px 24px; color: var(--muted); }
+  .empty-state h3 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
+  
+  @media (max-width: 768px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .form-grid { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: 1fr; }
+    .tax-ref-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <h1>Marzano AI</h1>
+      <p>Personalized Assessment Tool</p>
+    </div>
+
+    <div class="sidebar-section">
+      <h2>Tools</h2>
+      <div class="nav-item active" onclick="showPanel('submit')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 2v16M2 10h16" stroke-linecap="round"/></svg>
+        New Assessment
+      </div>
+      <div class="nav-item" onclick="showPanel('list'); loadList()">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h14M3 10h14M3 15h8" stroke-linecap="round"/></svg>
+        All Assessments
+      </div>
+      <div class="nav-item" onclick="showPanel('taxonomy')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h12v3H4zM4 10h8v3H4zM4 16h5v-2H4z" stroke-linecap="round"/></svg>
+        Taxonomy Reference
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h2>Recent Assessments</h2>
+    </div>
+    <div class="assessment-list" id="sidebar-list"></div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- Submit Panel -->
+    <div id="panel-submit" class="panel active">
+      <div class="page-header">
+        <h2>New Student Assessment</h2>
+        <p>Submit a student artifact for Marzano-aligned AI feedback. The teacher reviews and approves the draft.</p>
+      </div>
+
+      <div id="submit-alert" class="alert" style="display:none"></div>
+
+      <form id="assessment-form" onsubmit="submitAssessment(event)">
+        <div class="card">
+          <div class="card-title">Student Information</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Student Name</label>
+              <input type="text" name="student_name" placeholder="e.g. Alex Chen" required>
+            </div>
+            <div class="form-group">
+              <label>Grade Level</label>
+              <select name="grade_level" required>
+                <option value="">Select grade…</option>
+                <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+                <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option>
+                <option>Grade 12</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Subject / Core Requirement</label>
+              <input type="text" name="subject" placeholder="e.g. Mathematics — Geometry" required>
+            </div>
+            <div class="form-group">
+              <label>Student Passion / Context</label>
+              <select name="student_passion" required onchange="updatePassionHint(this)">
+                <option value="">Select passion…</option>
+                <option value="architecture">Architecture</option>
+                <option value="astronomy">Astronomy</option>
+                <option value="barrel_making">Barrel Making / Cooperage</option>
+                <option value="photography">Photography</option>
+                <option value="music">Music</option>
+                <option value="cooking">Cooking / Baking</option>
+                <option value="custom">Other (describe in artifact)</option>
+              </select>
+              <div id="passion-hint" style="font-size:11px;color:var(--muted);margin-top:6px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Student Artifact</div>
+
+          <div class="form-group">
+            <label>Upload File (optional — image, PDF, schematic)</label>
+            <div class="upload-area" onclick="document.getElementById('file-input').click()">
+              <p>📎 <strong>Click to upload</strong> or drag and drop</p>
+              <p style="margin-top:4px">Images (JPG, PNG, GIF), PDF, or any document</p>
+              <div id="file-preview"></div>
+            </div>
+            <input type="file" id="file-input" name="artifact_file" style="display:none" accept="image/*,.pdf,.doc,.docx,.txt" onchange="previewFile(this)">
+          </div>
+
+          <div class="form-group">
+            <label>Artifact Description</label>
+            <textarea name="artifact_description" placeholder="Describe what the student created or did. Include key mathematical concepts, methods, and findings. Be specific — the AI will cite this directly in its feedback." rows="5" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Student Reflection / Notes (optional)</label>
+            <textarea name="student_reflection" placeholder="Paste the student's own reflection, journal entry, or notes here. Evidence of metacognition often lives here." rows="3"></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn">
+          Generate Marzano Assessment
+        </button>
+      </form>
+    </div>
+
+    <!-- List Panel -->
+    <div id="panel-list" class="panel">
+      <div class="page-header">
+        <h2>All Assessments</h2>
+        <p>Click any assessment to review and edit the AI feedback.</p>
+      </div>
+      <div id="assessment-list-main"></div>
+    </div>
+
+    <!-- Review Panel -->
+    <div id="panel-review" class="panel">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <h2 id="review-title">Assessment Review</h2>
+          <p id="review-meta" style="color:var(--muted);font-size:13px;margin-top:4px;"></p>
+        </div>
+        <button class="btn btn-secondary" onclick="showPanel('list'); loadList()">← Back</button>
+      </div>
+
+      <div id="review-alert" class="alert" style="display:none"></div>
+
+      <!-- Overall -->
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Overall Assessment</span>
+          <span id="review-overall-badge" class="badge badge-level"></span>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-box">
+            <h4>Strengths</h4>
+            <p id="review-strengths"></p>
+          </div>
+          <div class="summary-box">
+            <h4>Growth Areas</h4>
+            <p id="review-growth"></p>
+          </div>
+        </div>
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Next Level Challenge</h4>
+          <p id="review-next"></p>
+        </div>
+        <div class="summary-box">
+          <h4>Passion Integration</h4>
+          <p id="review-passion"></p>
+        </div>
+      </div>
+
+      <!-- Taxonomy Breakdown -->
+      <div class="card">
+        <div class="card-title">Marzano Taxonomy Breakdown</div>
+        <div class="taxonomy-breakdown" id="review-breakdown"></div>
+      </div>
+
+      <!-- AI Reasoning (transparency) -->
+      <div class="card">
+        <div class="card-title">AI Reasoning (Teacher Transparency)</div>
+        <div class="reasoning" id="review-reasoning"></div>
+      </div>
+
+      <!-- Teacher Edit Section -->
+      <div class="teacher-section">
+        <h3>✏️ Teacher Review</h3>
+        <div class="form-group">
+          <label>Your Comments / Additions</label>
+          <textarea id="teacher-comments" rows="4" placeholder="Add your own observations, corrections, or student-specific context here…"></textarea>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Override Level (optional)</label>
+            <select id="teacher-level">
+              <option value="">Use AI assessment</option>
+              <option>Self System — Examining Importance</option>
+              <option>Self System — Examining Efficacy</option>
+              <option>Self System — Examining Emotional Response</option>
+              <option>Metacognitive — Goal Specification</option>
+              <option>Metacognitive — Process Monitoring</option>
+              <option>Cognitive: Retrieval — Recalling</option>
+              <option>Cognitive: Retrieval — Executing</option>
+              <option>Cognitive: Comprehension — Integrating</option>
+              <option>Cognitive: Comprehension — Symbolizing</option>
+              <option>Cognitive: Analysis — Matching</option>
+              <option>Cognitive: Analysis — Generalizing</option>
+              <option>Cognitive: Analysis — Specifying</option>
+              <option>Cognitive: Knowledge Utilization — Problem Solving</option>
+              <option>Cognitive: Knowledge Utilization — Experimenting</option>
+              <option>Cognitive: Knowledge Utilization — Investigating</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="saveDraft()">Save Draft</button>
+          <button class="btn btn-success" onclick="approveAndSave()">✓ Approve & Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Taxonomy Reference Panel -->
+    <div id="panel-taxonomy" class="panel">
+      <div class="page-header">
+        <h2>Marzano Taxonomy Reference</h2>
+        <p>The three systems and four cognitive levels used to generate all feedback.</p>
+      </div>
+      <div class="tax-ref-grid" id="taxonomy-ref-content"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = window.location.hostname === 'localhost' 
+  ? 'http://localhost:8000' 
+  : '/api';
+
+let currentAssessmentId = null;
+
+// ─── Navigation ───
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ─── Passion hint ───
+const PASSION_HINTS = {
+  architecture: 'Math: geometry, ratios, area, structural load, trigonometry',
+  astronomy: 'Math: scientific notation, scale, gravity, orbital mechanics',
+  barrel_making: 'Math: volume, surface area, ratios, geometry',
+  photography: 'Math: ratios, fractions, depth-of-field geometry, light',
+  music: 'Math: fractions, ratios, frequency, wave patterns',
+  cooking: 'Math: ratios, fractions, scaling, measurement, chemistry',
+};
+
+function updatePassionHint(sel) {
+  const h = document.getElementById('passion-hint');
+  h.textContent = PASSION_HINTS[sel.value] || '';
+}
+
+// ─── File preview ───
+function previewFile(input) {
+  const el = document.getElementById('file-preview');
+  if (input.files.length) {
+    const f = input.files[0];
+    el.textContent = `✓ ${f.name} (${(f.size / 1024).toFixed(1)} KB)`;
+  } else {
+    el.textContent = '';
+  }
+}
+
+// ─── Submit assessment ───
+async function submitAssessment(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const alert = document.getElementById('submit-alert');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Generating Marzano assessment…';
+  alert.style.display = 'none';
+
+  const form = document.getElementById('assessment-form');
+  const fd = new FormData(form);
+
+  try {
+    const res = await fetch(`${API}/assess`, { method: 'POST', body: fd });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Server error');
+    }
+    const data = await res.json();
+    loadReview(data.assessment_id);
+    showPanel('review');
+    loadSidebarList();
+  } catch (err) {
+    alert.className = 'alert alert-error';
+    alert.textContent = '⚠ ' + err.message;
+    alert.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Generate Marzano Assessment';
+  }
+}
+
+// ─── Load assessment list ───
+async function loadList() {
+  const container = document.getElementById('assessment-list-main');
+  container.innerHTML = '<p style="color:var(--muted)">Loading…</p>';
+  try {
+    const res = await fetch(`${API}/assessments`);
+    const list = await res.json();
+    if (!list.length) {
+      container.innerHTML = '<div class="empty-state"><h3>No assessments yet</h3><p>Submit your first student artifact using New Assessment.</p></div>';
+      return;
+    }
+    container.innerHTML = list.map(a => `
+      <div class="card" style="cursor:pointer;transition:border-color 0.15s" 
+           onmouseover="this.style.borderColor='var(--accent)'"
+           onmouseout="this.style.borderColor='var(--border)'"
+           onclick="loadReview('${a.id}');showPanel('review')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:600;font-size:15px">${a.student_name}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${a.subject} · ${a.grade_level} · ${a.passion}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <span class="badge badge-level">${a.overall_level}</span>
+            <span class="badge ${a.approved ? 'badge-approved' : 'badge-draft'}">${a.approved ? 'Approved' : 'Draft'}</span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">${new Date(a.created_at).toLocaleDateString()}</div>
+      </div>
+    `).join('');
+  } catch {
+    container.innerHTML = '<div class="alert alert-error">Could not load assessments. Is the backend running?</div>';
+  }
+}
+
+async function loadSidebarList() {
+  try {
+    const res = await fetch(`${API}/assessments`);
+    const list = await res.json();
+    const el = document.getElementById('sidebar-list');
+    el.innerHTML = list.slice(0, 8).map(a => `
+      <div class="assessment-card-mini" onclick="loadReview('${a.id}');showPanel('review')">
+        <div class="student">${a.student_name}</div>
+        <div class="meta">
+          <span>${a.grade_level}</span>
+          <span class="badge ${a.approved ? 'badge-approved' : 'badge-draft'}">${a.approved ? '✓' : 'Draft'}</span>
+        </div>
+      </div>
+    `).join('');
+  } catch {}
+}
+
+// ─── Load & display one assessment ───
+async function loadReview(id) {
+  currentAssessmentId = id;
+  const alert = document.getElementById('review-alert');
+  alert.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/assessments/${id}`);
+    if (!res.ok) throw new Error('Not found');
+    const d = await res.json();
+    const f = d.feedback;
+
+    document.getElementById('review-title').textContent = `${d.student_name} — ${d.subject}`;
+    document.getElementById('review-meta').textContent = `${d.grade_level} · ${d.student_passion} · ${new Date(d.created_at).toLocaleDateString()}`;
+    document.getElementById('review-overall-badge').textContent = `${f.overall_level} — ${f.overall_sublevel}`;
+    document.getElementById('review-strengths').textContent = f.strength_summary || '—';
+    document.getElementById('review-growth').textContent = f.growth_summary || '—';
+    document.getElementById('review-next').textContent = f.next_level_prompt || '—';
+    document.getElementById('review-passion').textContent = f.passion_integration || '—';
+    document.getElementById('review-reasoning').textContent = f.ai_reasoning || '—';
+    document.getElementById('teacher-comments').value = d.teacher_comments || '';
+    document.getElementById('teacher-level').value = d.teacher_edited_level || '';
+
+    // Taxonomy breakdown
+    const breakdown = document.getElementById('review-breakdown');
+    if (f.taxonomy_breakdown && f.taxonomy_breakdown.length) {
+      breakdown.innerHTML = f.taxonomy_breakdown.map(item => `
+        <div class="taxonomy-item">
+          <div class="taxonomy-header ${systemClass(item.system)}">
+            <div>
+              <div class="taxonomy-system">${item.system}</div>
+              <div class="taxonomy-level">${item.level}</div>
+              <div class="taxonomy-sublevel">${item.sublevel}</div>
+            </div>
+            <span class="rating-pill ${ratingClass(item.rating)}">${item.rating}</span>
+          </div>
+          <div class="taxonomy-evidence">
+            <strong>Evidence from student work</strong>
+            ${escHtml(item.evidence)}
+            ${item.teacher_note ? `<br><br><strong style="color:var(--accent)">Teacher note</strong>${escHtml(item.teacher_note)}` : ''}
+          </div>
+        </div>
+      `).join('');
+    } else {
+      breakdown.innerHTML = '<p style="color:var(--muted)">No breakdown available.</p>';
+    }
+  } catch (err) {
+    alert.className = 'alert alert-error';
+    alert.textContent = '⚠ Failed to load assessment: ' + err.message;
+    alert.style.display = 'block';
+  }
+}
+
+function systemClass(system) {
+  if (!system) return '';
+  const s = system.toLowerCase();
+  if (s.includes('self')) return 'system-self';
+  if (s.includes('meta')) return 'system-meta';
+  return 'system-cognitive';
+}
+
+function ratingClass(r) {
+  const m = { advanced: 'rating-advanced', proficient: 'rating-proficient', developing: 'rating-developing', emerging: 'rating-emerging' };
+  return m[(r || '').toLowerCase()] || 'rating-not';
+}
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── Teacher save / approve ───
+async function saveDraft() { await saveAssessment(false); }
+async function approveAndSave() { await saveAssessment(true); }
+
+async function saveAssessment(approved) {
+  const alert = document.getElementById('review-alert');
+  if (!currentAssessmentId) return;
+  try {
+    const res = await fetch(`${API}/assessments/${currentAssessmentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        assessment_id: currentAssessmentId,
+        teacher_comments: document.getElementById('teacher-comments').value,
+        edited_level: document.getElementById('teacher-level').value || null,
+        approved,
+      }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    alert.className = 'alert alert-success';
+    alert.textContent = approved ? '✓ Assessment approved and saved.' : '✓ Draft saved.';
+    alert.style.display = 'block';
+    loadSidebarList();
+    setTimeout(() => { alert.style.display = 'none'; }, 3000);
+  } catch (err) {
+    alert.className = 'alert alert-error';
+    alert.textContent = '⚠ ' + err.message;
+    alert.style.display = 'block';
+  }
+}
+
+// ─── Taxonomy reference ───
+async function loadTaxonomyRef() {
+  const container = document.getElementById('taxonomy-ref-content');
+  try {
+    const res = await fetch(`${API}/taxonomy`);
+    const tax = await res.json();
+    const colorMap = { self_system: 'self', metacognitive: 'meta', retrieval: 'retrieval', comprehension: 'comprehension', analysis: 'analysis', knowledge_utilization: 'utilization' };
+    container.innerHTML = Object.entries(tax).map(([key, level]) => `
+      <div class="tax-ref-card">
+        <div class="tax-ref-header ${colorMap[key] || ''}">
+          ${level.name}
+          ${level.bloom_equivalent ? `<span style="font-weight:400;font-size:11px;margin-left:8px">≈ Bloom's: ${level.bloom_equivalent}</span>` : ''}
+        </div>
+        ${level.sublevels.map(s => `
+          <div class="tax-ref-sublevel">
+            <h4>${s.name}</h4>
+            <div class="verbs">${s.verbs.slice(0, 5).join(' · ')}</div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  } catch {
+    container.innerHTML = '<div class="alert alert-error">Could not load taxonomy. Is the backend running?</div>';
+  }
+}
+
+// ─── Init ───
+loadSidebarList();
+document.getElementById('panel-taxonomy').addEventListener('click', () => {}, { once: false });
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    if (el.onclick?.toString().includes('taxonomy')) loadTaxonomyRef();
+  });
+});
+
+// Drag-and-drop upload
+const uploadArea = document.querySelector('.upload-area');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = 'var(--accent)'; });
+uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'var(--border)'; });
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.style.borderColor = 'var(--border)';
+  const fi = document.getElementById('file-input');
+  fi.files = e.dataTransfer.files;
+  previewFile(fi);
+});
+</script>
+</body>
+</html>

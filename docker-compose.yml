@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+
+  # ── Backend API ──────────────────────────────────────────
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      - DATA_DIR=/data/assessments
+      - RAG_INDEX_PATH=/data/marzano_index.json
+    volumes:
+      - assessment_data:/data
+      - ./backend:/app          # live reload in dev
+    ports:
+      - "8000:8000"             # direct API access for dev
+    restart: unless-stopped
+
+  # ── Frontend (nginx) ─────────────────────────────────────
+  frontend:
+    image: nginx:alpine
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ── Ollama (optional — uncomment to enable local AI) ─────
+  # ollama:
+  #   image: ollama/ollama
+  #   volumes:
+  #     - ollama_models:/root/.ollama
+  #   ports:
+  #     - "11434:11434"
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+
+volumes:
+  assessment_data:
+  # ollama_models:
