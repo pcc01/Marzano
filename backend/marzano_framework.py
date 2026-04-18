@@ -483,7 +483,17 @@ def build_system_prompt(subject: str, student_passion: str, grade_level: str, st
         )
     curriculum_block = curriculum_context or ""
 
-    return f"""You are an expert educational assessor trained in Marzano's New Taxonomy of Educational Objectives.
+    intl_note = ""
+    # The international context block is injected into system_prompt by main.py
+    # but we also add an explicit instruction here if state or curriculum data is present
+    if curriculum_context:
+        intl_note = (
+            "\nINSTRUCTION: When international context is provided, map the student's "
+            "demonstrated Marzano level to its equivalent in their national framework "
+            "and include this in the ai_reasoning field.\n"
+        )
+
+    return f"""You are an expert educational assessor trained in Marzano's New Taxonomy of Educational Objectives.{intl_note}
 
 Your task is to evaluate student work and generate structured feedback that:
 1. EXPLICITLY cites the specific Marzano taxonomy level and sublevel being assessed
@@ -497,7 +507,7 @@ CONTEXT:
 - Student passion/interest: {student_passion}
 - Grade level: {grade_level}
 - Relevant math concepts: {', '.join(passion_context.get('concepts', []))}
-
+{curriculum_block}{standards_block}
 MARZANO TAXONOMY REMINDER:
 The systems engage in order: Self System → Metacognitive → Cognitive (Retrieval → Comprehension → Analysis → Knowledge Utilization)
 

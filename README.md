@@ -3,7 +3,7 @@
 > AI-powered educational assessment grounded in **Marzano's New Taxonomy of Educational Objectives**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4.0--dev-orange)](https://github.com/pcc01/Marzano/blob/main/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue)](https://github.com/pcc01/Marzano/blob/main/CHANGELOG.md)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)](https://www.postgresql.org/)
@@ -38,8 +38,9 @@ A student passionate about **photography** demonstrates the same geometry standa
 | **Core curriculum registry** — 37 subjects across 5 grade bands | ✅ |
 | **State standards RAG** — tag documents by state/grade/subject, filtered retrieval | ✅ |
 | **Standards citations in feedback** — AI names standard codes in taxonomy breakdown | ✅ |
-| **International mapping foundation** — 10 countries, grade equivalencies, Marzano ↔ PISA/IB/GCSE | 🏗️ v0.4.0 |
-| International classroom UI — country selector, localised grade levels | 🔜 v0.4.0 |
+| **Test suite** — 177 unit + e2e tests, 100% pass rate | ✅ |
+| **International mapping foundation** — 10 countries, grade equivalencies, Marzano ↔ PISA/IB/GCSE | ✅ |
+| **International classroom UI** — country selector, auto-localised grade, framework equivalency lookup | ✅ |
 | Batch assessment upload | 🔜 |
 | PDF export of approved feedback | 🔜 |
 | LMS integration (Canvas, Google Classroom) | 🔜 |
@@ -449,6 +450,36 @@ Marzano/
 | `RAG_TOP_K` | `4` | Passages retrieved per assessment |
 | `VIDEO_MAX_FRAMES` | `8` | Max frames extracted from video |
 | `VIDEO_MAX_SECONDS` | `300` | Video duration cap (5 min) |
+
+---
+
+## Running the Tests
+
+The test suite covers all backend modules and the full API surface.
+
+```bash
+# Install test dependencies
+pip install pytest pytest-asyncio httpx fastapi
+
+# From the project root:
+python -m pytest tests/ -v
+
+# Individual suites:
+python -m pytest tests/test_marzano_framework.py   # Taxonomy + prompt logic
+python -m pytest tests/test_curriculum.py          # Subject registry
+python -m pytest tests/test_international.py       # International mappings
+python -m pytest tests/test_haystack_pipeline.py   # RAG filtering
+python -m pytest tests/test_api_e2e.py             # Full API (mocked DB + AI)
+```
+
+| Test file | Tests | What it covers |
+|---|---|---|
+| `test_marzano_framework.py` | 29 | Taxonomy structure, passion mapping, prompt generation, JSON extraction |
+| `test_curriculum.py` | 40 | Grade bands, subject registry, lookup helpers, context builder |
+| `test_international.py` | 54 | Country registry, grade equivalency map, Marzano ↔ framework mapping |
+| `test_haystack_pipeline.py` | 20 | Metadata filter, store load/reload, retrieval with filter |
+| `test_api_e2e.py` | 34 | All API endpoints via FastAPI TestClient (DB + AI mocked) |
+| **Total** | **177** | **100% pass rate** |
 
 ---
 

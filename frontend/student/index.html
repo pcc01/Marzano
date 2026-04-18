@@ -349,6 +349,27 @@
         </div>
         <div class="form-row">
           <div class="form-group">
+            <label>Country</label>
+            <select id="country_code" onchange="onStudentCountryChange(this.value)">
+              <option value="">United States (default)</option>
+              <option value="GB">United Kingdom</option>
+              <option value="AU">Australia</option>
+              <option value="CA">Canada</option>
+              <option value="FR">France</option>
+              <option value="DE">Germany</option>
+              <option value="JP">Japan</option>
+              <option value="IB">International Baccalaureate</option>
+              <option value="NZ">New Zealand</option>
+              <option value="SG">Singapore</option>
+            </select>
+          </div>
+          <div class="form-group" id="student-local-grade-group" style="display:none">
+            <label>Local grade</label>
+            <input id="local_grade" placeholder="e.g. Year 10" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
             <label>Grade band</label>
             <select id="grade_band_sel" onchange="loadStudentSubjects(this.value)">
               <option value="">Select…</option>
@@ -597,6 +618,26 @@ zone.addEventListener('drop', e => {
   }
 });
 
+// ── International ──
+async function onStudentCountryChange(code) {
+  const grp = document.getElementById('student-local-grade-group');
+  grp.style.display = code ? 'block' : 'none';
+  if (!code) return;
+  const gradeSel = document.getElementById('grade_level');
+  const usGrade = gradeSel?.value;
+  if (usGrade) {
+    try {
+      const r = await fetch(`${API}/international/grades/${encodeURIComponent(usGrade)}`);
+      if (r.ok) {
+        const data = await r.json();
+        const equiv = data.equivalents[code];
+        const input = document.getElementById('local_grade');
+        if (equiv && input && !input.value) input.value = equiv.split(' (')[0];
+      }
+    } catch { }
+  }
+}
+
 // ── Curriculum loader ──
 let _studentCurrCache = null;
 async function loadStudentSubjects(bandId) {
@@ -642,6 +683,8 @@ async function submitWork() {
   fd.append('student_name', v('student_name'));
   fd.append('grade_level', v('grade_level'));
   fd.append('grade_band', document.getElementById('grade_band_sel')?.value || '');
+  fd.append('country_code', document.getElementById('country_code')?.value || '');
+  fd.append('local_grade', document.getElementById('local_grade')?.value || '');
   fd.append('subject', v('subject'));
   fd.append('student_passion', v('student_passion'));
   fd.append('artifact_description', v('artifact_description'));
@@ -722,7 +765,7 @@ function resetForm() {
   });
 
   // Clear fields
-  ['student_name','grade_level','subject','student_passion','artifact_description','student_reflection','grade_band_sel'].forEach(id => {
+  ['student_name','grade_level','subject','student_passion','artifact_description','student_reflection','grade_band_sel','country_code','local_grade'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });

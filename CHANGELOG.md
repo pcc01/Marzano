@@ -5,6 +5,51 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.4.0] — 2026-04-18
+
+### Added
+
+**International classroom UI — fully wired**
+
+- Country selector on both teacher dashboard and student portal (10 countries:
+  US, UK, Australia, Canada, France, Germany, Japan, IB, New Zealand, Singapore)
+- Local grade designation field auto-populates from the `/international/grades/{grade}`
+  API when a country is selected (e.g. selecting "UK" + "Grade 9" pre-fills "Year 10")
+- International panel in teacher dashboard: grade level lookup table, Marzano ↔
+  international framework equivalency table, country cards
+- `🌐 GB (Year 10)` badge shown in review panel metadata for international assessments
+- `country_code` and `local_grade` fields added to `Assessment` DB model
+- `POST /assess` and `POST /student/submit` accept `country_code` and `local_grade`
+- `build_international_context()` injected into AI system prompt when country provided;
+  AI instructed to map Marzano level to student's national framework equivalent
+- New API endpoints: `GET /international/grades/{us_grade}`,
+  `GET /international/marzano/{level}`
+
+**Test suite — 177 tests, 100% pass rate**
+
+- `tests/test_marzano_framework.py` — 29 unit tests covering taxonomy structure,
+  passion mapping, prompt generation, and JSON extraction
+- `tests/test_curriculum.py` — 40 unit tests covering grade bands, subject registry,
+  lookup helpers, context builder, and API response shape
+- `tests/test_international.py` — 54 unit tests covering country registry, grade map
+  completeness, Marzano framework mapping, all helper functions
+- `tests/test_haystack_pipeline.py` — 20 unit tests covering metadata filter
+  (`_build_mask`), store loading, retrieval with filter, and index persistence
+- `tests/test_api_e2e.py` — 34 end-to-end tests using FastAPI TestClient covering
+  health, taxonomy, passions, curriculum, international, ingest, and assessments
+  endpoints; database and AI fully mocked
+- `pytest.ini` — test configuration with asyncio_mode=auto and short traceback format
+
+**Bug fixes found by tests**
+
+- `grade_band_for_level("Grade 12")` returned `elementary_k2` due to substring
+  collision: "grade 1" matched "grade 12". Fixed with exact equality matching.
+- `curriculum_block` and `standards_block` were constructed in `build_system_prompt()`
+  but never interpolated into the returned f-string. Fixed — both now appear in
+  the CONTEXT section of the system prompt.
+
+---
+
 ## [0.3.0] — 2026-04-18
 
 ### Fixed

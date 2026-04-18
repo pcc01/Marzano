@@ -284,6 +284,10 @@
         Notifications
         <span id="notif-badge" class="nav-badge" style="display:none">0</span>
       </button>
+      <button class="nav-btn" id="nav-international" onclick="nav('international'); loadInternational()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 2c-2 2-3 4-3 6s1 4 3 6M8 2c2 2 3 4 3 6s-1 4-3 6M2 8h12" stroke-linecap="round"/></svg>
+        International
+      </button>
       <button class="nav-btn" id="nav-taxonomy" onclick="nav('taxonomy'); loadTaxRef()">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h5v4H2zM9 3h5v4H9zM2 11h12" stroke-linecap="round"/></svg>
         Taxonomy Reference
@@ -343,6 +347,28 @@
                 <option value="Virginia"><option value="Washington"><option value="West Virginia">
                 <option value="Wisconsin"><option value="Wyoming">
               </datalist>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Country <span style="font-weight:400;color:var(--muted)">(optional — for international classrooms)</span></label>
+              <select id="country_code_sel" name="country_code" onchange="onCountryChange(this.value)">
+                <option value="">United States (default)</option>
+                <option value="GB">United Kingdom (England)</option>
+                <option value="AU">Australia</option>
+                <option value="CA">Canada</option>
+                <option value="FR">France</option>
+                <option value="DE">Germany</option>
+                <option value="JP">Japan</option>
+                <option value="IB">International Baccalaureate</option>
+                <option value="NZ">New Zealand</option>
+                <option value="SG">Singapore</option>
+              </select>
+            </div>
+            <div class="form-group" id="local-grade-group" style="display:none">
+              <label>Local grade designation</label>
+              <input id="local_grade_input" name="local_grade" placeholder="e.g. Year 10, Seconde, 高校1年">
+              <div id="local-grade-hint" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
             </div>
           </div>
           <div class="form-row">
@@ -583,6 +609,57 @@
       <div id="notif-list"></div>
     </div>
 
+    <!-- International Classroom -->
+    <div id="panel-international" class="panel">
+      <div class="page-hdr">
+        <div><h2>International Classrooms</h2><p>Grade equivalencies and Marzano ↔ international framework mappings.</p></div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">Look up a grade level</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>US Grade</label>
+            <select id="intl-grade-sel" onchange="lookupGrade(this.value)">
+              <option value="">Select US grade…</option>
+              <option>Kindergarten</option>
+              <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
+              <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
+              <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
+              <option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Marzano Level</label>
+            <select id="intl-level-sel" onchange="lookupMarzano(this.value)">
+              <option value="">Select level…</option>
+              <option value="retrieval">Cognitive: Retrieval</option>
+              <option value="comprehension">Cognitive: Comprehension</option>
+              <option value="analysis">Cognitive: Analysis</option>
+              <option value="knowledge_utilization">Cognitive: Knowledge Utilization</option>
+              <option value="metacognitive">Metacognitive System</option>
+              <option value="self_system">Self System</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="intl-grade-result" style="display:none" class="card">
+        <div class="card-title" id="intl-grade-title">Grade equivalencies</div>
+        <div id="intl-grade-table"></div>
+      </div>
+
+      <div id="intl-marzano-result" style="display:none" class="card">
+        <div class="card-title" id="intl-marzano-title">International framework equivalencies</div>
+        <div id="intl-marzano-table"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">All countries</div>
+        <div id="intl-countries-grid"></div>
+      </div>
+    </div>
+
     <!-- Taxonomy Reference -->
     <div id="panel-taxonomy" class="panel">
       <div class="page-hdr"><div><h2>Taxonomy Reference</h2><p>All levels and sublevels used in feedback.</p></div></div>
@@ -779,6 +856,41 @@ function toggleStandardsFields(val) {
   if (el) el.style.display = val === 'standards' ? 'block' : 'none';
 }
 
+// ─── Country / international ───
+async function onCountryChange(code) {
+  const gradeGroup = document.getElementById('local-grade-group');
+  const hint       = document.getElementById('local-grade-hint');
+  if (!code) {
+    gradeGroup.style.display = 'none';
+    return;
+  }
+  gradeGroup.style.display = 'block';
+  // Look up the current US grade equivalent in the selected country
+  const gradeSel = document.getElementById('grade_level_sel');
+  const usGrade  = gradeSel?.value;
+  if (usGrade) {
+    try {
+      const r = await fetch(`${API}/international/grades/${encodeURIComponent(usGrade)}`);
+      if (r.ok) {
+        const data = await r.json();
+        const equiv = data.equivalents[code];
+        if (equiv) hint.textContent = `Equivalent: ${equiv}`;
+      }
+    } catch { }
+  }
+  // Pre-fill local grade if we can
+  const input = document.getElementById('local_grade_input');
+  if (input && !input.value && usGrade) {
+    try {
+      const r = await fetch(`${API}/international/grades/${encodeURIComponent(usGrade)}`);
+      if (r.ok) {
+        const data = await r.json();
+        if (data.equivalents[code]) input.value = data.equivalents[code].split(' (')[0];
+      }
+    } catch { }
+  }
+}
+
 // ─── Passion hint ───
 const HINTS = {
   architecture: 'geometry · ratios · structural load · trig',
@@ -897,7 +1009,7 @@ async function loadReview(id) {
 
     document.getElementById('rv-title').textContent = `${d.student_name} — ${d.subject}`;
     document.getElementById('rv-meta').textContent =
-      `${d.grade_level} · ${d.student_passion} · ${d.submitted_by === 'student' ? '👤 Student submission · ' : ''}${fmtDate(d.created_at)}${d.has_video ? ' · 🎬 Video' : ''}`;
+      `${d.grade_level} · ${d.student_passion} · ${d.submitted_by === 'student' ? '👤 Student submission · ' : ''}${d.country_code ? '🌐 ' + d.country_code + (d.local_grade ? ' (' + d.local_grade + ')' : '') + ' · ' : ''}${fmtDate(d.created_at)}${d.has_video ? ' · 🎬 Video' : ''}`;
     document.getElementById('rv-badge').textContent = `${f.overall_level || '?'} — ${f.overall_sublevel || ''}`;
     document.getElementById('rv-strengths').textContent = f.strength_summary || '—';
     document.getElementById('rv-growth').textContent = f.growth_summary || '—';
@@ -1176,6 +1288,78 @@ function sysClass(s) {
 }
 function rClass(r) {
   return { advanced:'r-advanced', proficient:'r-proficient', developing:'r-developing', emerging:'r-emerging' }[(r||'').toLowerCase()] || 'r-not';
+}
+
+// ─── International ───
+let _intlCache = null;
+
+async function loadInternational() {
+  if (_intlCache) { renderCountries(_intlCache); return; }
+  try {
+    const r = await fetch(`${API}/international`);
+    _intlCache = await r.json();
+    renderCountries(_intlCache);
+  } catch { }
+}
+
+function renderCountries(data) {
+  const grid = document.getElementById('intl-countries-grid');
+  if (!grid || !data.countries) return;
+  const countries = Object.values(data.countries);
+  grid.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+      ${countries.map(c => `
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:12px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">${esc(c.name)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${esc(c.education_system)}</div>
+          <div style="font-size:11px;color:var(--muted)">${esc(c.grade_terminology)}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function lookupGrade(grade) {
+  if (!grade) { document.getElementById('intl-grade-result').style.display = 'none'; return; }
+  try {
+    const r = await fetch(`${API}/international/grades/${encodeURIComponent(grade)}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    document.getElementById('intl-grade-title').textContent = `Equivalents for ${grade}`;
+    const rows = Object.entries(data.equivalents).map(([code, equiv]) => `
+      <tr>
+        <td style="padding:6px 10px;font-weight:600;font-size:12px;color:var(--muted);white-space:nowrap">${esc(code)}</td>
+        <td style="padding:6px 10px;font-size:13px">${esc(equiv)}</td>
+      </tr>`).join('');
+    document.getElementById('intl-grade-table').innerHTML = `
+      <table style="width:100%;border-collapse:collapse">${rows}</table>`;
+    document.getElementById('intl-grade-result').style.display = 'block';
+  } catch { }
+}
+
+async function lookupMarzano(level) {
+  if (!level) { document.getElementById('intl-marzano-result').style.display = 'none'; return; }
+  try {
+    const r = await fetch(`${API}/international/marzano/${level}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const FRAMEWORK_LABELS = {
+      GB: 'UK (England)', AU: 'Australia (ACARA)', IB_MYP: 'IB Middle Years',
+      IB_DP: 'IB Diploma', FR: 'France', DE: 'Germany', PISA: 'PISA',
+      TIMSS: 'TIMSS', description: null,
+    };
+    document.getElementById('intl-marzano-title').textContent =
+      `${level.replace(/_/g,' ')} — international equivalencies`;
+    const rows = Object.entries(data.mapping)
+      .filter(([k]) => k !== 'description')
+      .map(([code, text]) => `
+        <tr>
+          <td style="padding:6px 10px;font-weight:600;font-size:12px;color:var(--muted);white-space:nowrap">${esc(FRAMEWORK_LABELS[code] || code)}</td>
+          <td style="padding:6px 10px;font-size:13px">${esc(text)}</td>
+        </tr>`).join('');
+    document.getElementById('intl-marzano-table').innerHTML =
+      `<div style="font-size:12px;color:var(--muted);padding:0 0 10px">${esc(data.mapping.description || '')}</div>` +
+      `<table style="width:100%;border-collapse:collapse">${rows}</table>`;
+    document.getElementById('intl-marzano-result').style.display = 'block';
+  } catch { }
 }
 
 // ─── Init ───

@@ -56,6 +56,10 @@ class Assessment(Base):
     teacher_edited_level: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     approved: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # International classroom context
+    country_code: Mapped[Optional[str]] = mapped_column(String(10),  nullable=True)
+    local_grade:  Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
     # Submission source
     submitted_by: Mapped[str] = mapped_column(String(20), default="teacher")  # teacher | student
 

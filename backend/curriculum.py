@@ -591,18 +591,28 @@ def build_curriculum_context(grade_band: str, subject_name: str) -> str:
 
 
 def grade_band_for_level(grade_level: str) -> str:
-    """Infer grade band from a grade level string."""
-    level = grade_level.lower()
-    if any(g in level for g in ["kindergarten", "grade 1", "grade 2"]):
-        return "elementary_k2"
-    if any(g in level for g in ["grade 3", "grade 4", "grade 5"]):
-        return "elementary_3_5"
-    if any(g in level for g in ["grade 6", "grade 7", "grade 8"]):
-        return "middle_6_8"
-    if any(g in level for g in ["grade 9", "grade 10"]):
-        return "high_9_10"
-    if any(g in level for g in ["grade 11", "grade 12"]):
+    """Infer grade band from a grade level string (most-specific match first)."""
+    level = grade_level.lower().strip()
+    # Check higher grades first to avoid "grade 1" matching "grade 12"
+    if any(level == g.lower() for g in ["Grade 11", "Grade 12"]):
         return "high_11_12"
+    if any(level == g.lower() for g in ["Grade 9", "Grade 10"]):
+        return "high_9_10"
+    if any(level == g.lower() for g in ["Grade 6", "Grade 7", "Grade 8"]):
+        return "middle_6_8"
+    if any(level == g.lower() for g in ["Grade 3", "Grade 4", "Grade 5"]):
+        return "elementary_3_5"
+    if any(level == g.lower() for g in ["Kindergarten", "Grade 1", "Grade 2"]):
+        return "elementary_k2"
+    # Fuzzy fallback for partial strings
+    if "11" in level or "12" in level:
+        return "high_11_12"
+    if "9" in level or "10" in level:
+        return "high_9_10"
+    if "6" in level or "7" in level or "8" in level:
+        return "middle_6_8"
+    if "3" in level or "4" in level or "5" in level:
+        return "elementary_3_5"
     return "high_9_10"  # default
 
 

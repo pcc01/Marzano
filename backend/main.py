@@ -37,7 +37,7 @@ from marzano_framework import (
 from ai_provider import call_ai, get_provider_info
 from haystack_pipeline import rag, ingest_document, prewarm, HAYSTACK_AVAILABLE, INDEX_PATH
 from curriculum import api_response as curriculum_api, build_curriculum_context, grade_band_for_level
-from international import api_response as international_api
+from international import api_response as international_api, build_international_context, COUNTRIES, GRADE_LEVEL_MAP
 from notifications import notif_manager, sse_event_generator
 from video_handler import process_video, is_video_file
 
@@ -236,6 +236,23 @@ async def get_curriculum_band(grade_band: str):
         ],
     }
 
+
+@app.get("/international/grades/{us_grade}")
+async def get_grade_equivalents(us_grade: str):
+    """Return international equivalents for a specific US grade level."""
+    equivalents = GRADE_LEVEL_MAP.get(us_grade, {})
+    if not equivalents:
+        raise HTTPException(status_code=404, detail=f"Grade '{us_grade}' not found")
+    return {"us_grade": us_grade, "equivalents": equivalents}
+
+@app.get("/international/marzano/{level}")
+async def get_marzano_international_mapping(level: str):
+    """Return international framework equivalencies for a Marzano level."""
+    from international import MARZANO_TO_INTERNATIONAL
+    mapping = MARZANO_TO_INTERNATIONAL.get(level)
+    if not mapping:
+        raise HTTPException(status_code=404, detail=f"Marzano level '{level}' not found")
+    return {"level": level, "mapping": mapping}
 
 @app.get("/international")
 async def get_international():
@@ -443,6 +460,8 @@ async def create_assessment(
     artifact_description: str = Form(...),
     student_reflection: str = Form(""),
     submitted_by: str = Form("teacher"),
+    country_code: str = Form(""),
+    local_grade: str = Form(""),
     artifact_file: Optional[UploadFile] = File(None),
     session: AsyncSession = Depends(get_session),
 ):
@@ -501,6 +520,14 @@ async def create_assessment(
         state=student_state or None,
         curriculum_context=curriculum_ctx,
     )
+    # International context (if country provided)
+    intl_context = ""
+    if country_code:
+        intl_context = build_international_context(grade_level, resolved_band, country_code)
+        if local_grade:
+            intl_context += f"Student's local grade designation: {local_grade}\n"
+        system_prompt += intl_context
+
     rag_query = f"{subject} {student_passion} {grade_level} {artifact_description[:200]}"
     rag_context = await rag.context_block(
         rag_query,
@@ -545,6 +572,8 @@ async def create_assessment(
         student_passion=student_passion,
         artifact_description=artifact_description,
         student_reflection=student_reflection or None,
+        country_code=country_code or None,
+        local_grade=local_grade or None,
         has_image=has_image,
         has_video=has_video,
         artifact_filename=artifact_filename,
@@ -596,6 +625,8 @@ async def list_all_assessments(session: AsyncSession = Depends(get_session)):
             "grade_level": r.grade_level,
             "passion": r.student_passion,
             "submitted_by": r.submitted_by,
+        "country_code": r.country_code,
+        "local_grade": r.local_grade,
             "overall_level": (r.feedback or {}).get("overall_level", ""),
             "approved": r.approved,
             "has_video": r.has_video,
