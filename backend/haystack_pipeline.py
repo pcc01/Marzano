@@ -130,73 +130,117 @@ async def prewarm():
 
 class _Store:
     """
-    Holds the document texts and their embedding matrix.
-    Retrieval = cosine similarity via numpy dot-product (embeddings are
-    normalised, so dot-product IS cosine similarity).
+    Holds document texts, metadata, and the embedding matrix.
+    Retrieval uses cosine similarity (normalised embeddings, so dot-product
+    == cosine sim) with optional metadata filtering for standards documents.
+
+    Metadata filter logic:
+      - doc_type "marzano_reference": always included in retrieval
+      - doc_type "standards": included only when state/grade_band/subject_area match
+      - Untagged documents (legacy): always included
     """
 
     def __init__(self):
         self._texts:   list[str]  = []
         self._sources: list[str]  = []
-        self._matrix:  Optional[np.ndarray] = None   # shape (N, dim)
+        self._metas:   list[dict] = []
+        self._matrix:  Optional[np.ndarray] = None
         self.loaded    = False
         self.doc_count = 0
 
     def load(self):
-        """Load persisted index from disk (synchronous — called at startup)."""
         if not INDEX_PATH.exists():
             print(f"[RAG] No index at {INDEX_PATH} — use /ingest to build one.")
             return
         try:
             with open(INDEX_PATH) as f:
                 raw = json.load(f)
-            texts   = [d["content"]              for d in raw if d.get("embedding")]
-            sources = [d.get("meta", {}).get("source", "?") for d in raw if d.get("embedding")]
-            vecs    = [d["embedding"]             for d in raw if d.get("embedding")]
-            if not vecs:
-                print("[RAG] Index contains no embedded documents.")
-                return
-            self._texts   = texts
-            self._sources = sources
-            self._matrix  = np.array(vecs, dtype=np.float32)
-            self.loaded    = True
-            self.doc_count = len(texts)
-            print(f"[RAG] Loaded {self.doc_count} embedded chunks from {INDEX_PATH}")
+            self._load_from_raw(raw)
         except Exception as e:
             print(f"[RAG] Load failed: {e}")
 
-    def _reload_from_raw(self, raw: list):
-        """Hot-reload after a successful ingestion without reading disk again."""
-        texts   = [d["content"]                              for d in raw if d.get("embedding")]
-        sources = [d.get("meta", {}).get("source", "?")     for d in raw if d.get("embedding")]
-        vecs    = [d["embedding"]                            for d in raw if d.get("embedding")]
-        if vecs:
-            self._texts   = texts
-            self._sources = sources
-            self._matrix  = np.array(vecs, dtype=np.float32)
-            self.loaded    = True
-            self.doc_count = len(texts)
+    def _load_from_raw(self, raw: list):
+        docs = [d for d in raw if d.get("embedding")]
+        if not docs:
+            print("[RAG] Index contains no embedded documents.")
+            return
+        self._texts   = [d["content"] for d in docs]
+        self._sources = [d.get("meta", {}).get("source", "?") for d in docs]
+        self._metas   = [d.get("meta", {}) for d in docs]
+        self._matrix  = np.array([d["embedding"] for d in docs], dtype=np.float32)
+        self.loaded    = True
+        self.doc_count = len(docs)
+        print(f"[RAG] Loaded {self.doc_count} chunks from {INDEX_PATH}")
 
-    def retrieve(self, query_emb: np.ndarray, top_k: int = TOP_K) -> list[tuple[str, str, float]]:
-        """Return top_k (text, source, score) tuples."""
+    def _reload_from_raw(self, raw: list):
+        """Hot-reload after successful ingestion."""
+        self._load_from_raw(raw)
+
+    def _build_mask(
+        self,
+        state: Optional[str] = None,
+        grade_band: Optional[str] = None,
+        subject_area: Optional[str] = None,
+    ) -> np.ndarray:
+        """
+        Boolean mask: True = include this chunk in retrieval.
+        Marzano reference docs always pass. Standards docs must match
+        at least one of the provided context fields.
+        """
+        mask = []
+        for meta in self._metas:
+            doc_type = meta.get("doc_type", "marzano_reference")
+            if doc_type != "standards":
+                mask.append(True)
+                continue
+            # Standards doc — check context match
+            m_state   = meta.get("state")
+            m_grade   = meta.get("grade_band")
+            m_subject = meta.get("subject_area")
+            state_ok   = (not state)   or (not m_state)   or (m_state == state)
+            grade_ok   = (not grade_band) or (not m_grade)   or (m_grade == grade_band)
+            subject_ok = (not subject_area) or (not m_subject) or (m_subject == subject_area)
+            mask.append(state_ok and grade_ok and subject_ok)
+        return np.array(mask, dtype=bool)
+
+    def retrieve(
+        self,
+        query_emb: np.ndarray,
+        top_k: int = TOP_K,
+        state: Optional[str] = None,
+        grade_band: Optional[str] = None,
+        subject_area: Optional[str] = None,
+    ) -> list[tuple[str, str, float]]:
+        """Return top_k (text, source, score) tuples, respecting metadata filter."""
         if not self.loaded or self._matrix is None:
             return []
-        scores = self._matrix @ query_emb          # cosine sim, normalised
-        idxs   = np.argsort(scores)[-top_k:][::-1]
-        return [(self._texts[i], self._sources[i], float(scores[i])) for i in idxs]
+        mask = self._build_mask(state, grade_band, subject_area)
+        if not mask.any():
+            return []
+        filtered_matrix  = self._matrix[mask]
+        filtered_texts   = [t for t, m in zip(self._texts,   mask) if m]
+        filtered_sources = [s for s, m in zip(self._sources, mask) if m]
+        scores  = filtered_matrix @ query_emb
+        idxs    = np.argsort(scores)[-top_k:][::-1]
+        return [(filtered_texts[i], filtered_sources[i], float(scores[i])) for i in idxs]
 
-    async def context_block(self, query: str) -> str:
-        """Build the RAG context string injected into the AI prompt."""
+    async def context_block(
+        self,
+        query: str,
+        state: Optional[str] = None,
+        grade_band: Optional[str] = None,
+        subject_area: Optional[str] = None,
+    ) -> str:
+        """Build the RAG context string for injection into the AI prompt."""
         if not self.loaded:
             return ""
         try:
             q_emb = await _embed.encode_one(query)
-            hits  = self.retrieve(q_emb)
+            hits  = self.retrieve(q_emb, state=state, grade_band=grade_band, subject_area=subject_area)
             if not hits:
                 return ""
-            parts = [f"[Marzano Source {i+1} — {src}]\n{txt}"
-                     for i, (txt, src, _) in enumerate(hits)]
-            return "\n\nRELEVANT MARZANO REFERENCE PASSAGES:\n" + "\n\n".join(parts) + "\n"
+            parts = [f"[Source {i+1} — {src}]\n{txt}" for i, (txt, src, _) in enumerate(hits)]
+            return "\n\nRELEVANT KNOWLEDGE BASE PASSAGES:\n" + "\n\n".join(parts) + "\n"
         except Exception as e:
             print(f"[RAG] Retrieval error: {e}")
             return ""
@@ -227,6 +271,10 @@ async def ingest_document(
     job_id:     str,
     notify,                # notif_manager.broadcast coroutine
     db_session=None,
+    doc_type:   str = "marzano_reference",   # "marzano_reference" | "standards"
+    state:      Optional[str] = None,
+    grade_band: Optional[str] = None,
+    subject_area: Optional[str] = None,
 ):
     """
     Full ingestion pipeline:
@@ -334,11 +382,21 @@ async def ingest_document(
             persist=False,
         )
 
+        # Build metadata tags for each chunk
+        chunk_meta = {
+            "source":      filename,
+            "doc_type":    doc_type,
+        }
+        if doc_type == "standards":
+            if state:        chunk_meta["state"]        = state
+            if grade_band:   chunk_meta["grade_band"]   = grade_band
+            if subject_area: chunk_meta["subject_area"] = subject_area
+
         existing = _load_raw_index()
         for text, emb in zip(chunk_texts, all_embeddings):
             existing.append({
                 "content":   text,
-                "meta":      {"source": filename},
+                "meta":      chunk_meta,
                 "embedding": emb,
             })
 

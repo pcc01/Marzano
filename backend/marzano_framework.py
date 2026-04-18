@@ -464,12 +464,24 @@ PASSION_MATH_CONNECTIONS = {
 }
 
 
-def build_system_prompt(subject: str, student_passion: str, grade_level: str) -> str:
+def build_system_prompt(subject: str, student_passion: str, grade_level: str, state: str = None, curriculum_context: str = None) -> str:
     """Build the system prompt that instructs the AI to think in Marzano terms."""
     passion_context = PASSION_MATH_CONNECTIONS.get(
         student_passion.lower(), 
         {"concepts": [subject], "marzano_entry_point": "comprehension"}
     )
+
+    standards_block = ""
+    if state:
+        standards_block = (
+            f"\nSTANDARDS CONTEXT:\n"
+            f"State: {state}\n"
+            "When relevant state standards passages appear in the KNOWLEDGE BASE PASSAGES, "
+            "identify which specific standards the student's work demonstrates competency toward. "
+            "Include standard codes and descriptions in your taxonomy_breakdown evidence fields "
+            "and add a 'standards_cited' list to your JSON output.\n"
+        )
+    curriculum_block = curriculum_context or ""
 
     return f"""You are an expert educational assessor trained in Marzano's New Taxonomy of Educational Objectives.
 
@@ -508,6 +520,7 @@ You must return a JSON object with this exact structure:
   ],
   "next_level_prompt": "<specific question or challenge to push student to next level>",
   "standards_connections": ["<list of curriculum standards this work addresses>"],
+  "standards_cited": ["<state standard codes if state standards passages were provided>"],
   "passion_integration": "<how well the student's passion was leveraged for learning>",
   "ai_reasoning": "<explain your assessment reasoning for teacher transparency>"
 }}

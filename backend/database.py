@@ -83,6 +83,12 @@ class IngestionJob(Base):
     chunks_done: Mapped[int] = mapped_column(Integer, default=0)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    # Metadata tags applied to all chunks from this document
+    doc_type:     Mapped[Optional[str]] = mapped_column(String(30),  nullable=True, default="marzano_reference")
+    state:        Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    grade_band:   Mapped[Optional[str]] = mapped_column(String(50),  nullable=True)
+    subject_area: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, default=datetime.datetime.utcnow
     )

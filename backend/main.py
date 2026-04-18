@@ -36,6 +36,8 @@ from marzano_framework import (
 )
 from ai_provider import call_ai, get_provider_info
 from haystack_pipeline import rag, ingest_document, prewarm, HAYSTACK_AVAILABLE, INDEX_PATH
+from curriculum import api_response as curriculum_api, build_curriculum_context, grade_band_for_level
+from international import api_response as international_api
 from notifications import notif_manager, sse_event_generator
 from video_handler import process_video, is_video_file
 
@@ -202,6 +204,49 @@ async def get_passions():
     return PASSION_MATH_CONNECTIONS
 
 
+@app.get("/curriculum")
+async def get_curriculum():
+    """Full curriculum registry — grade bands and subjects with Marzano targets."""
+    return curriculum_api()
+
+
+@app.get("/curriculum/{grade_band}")
+async def get_curriculum_band(grade_band: str):
+    """Subjects for a specific grade band, formatted for the assessment form."""
+    from curriculum import get_subjects_for_band, GRADE_BANDS
+    band = GRADE_BANDS.get(grade_band)
+    if not band:
+        raise HTTPException(status_code=404, detail=f"Grade band '{grade_band}' not found")
+    subjects = get_subjects_for_band(grade_band)
+    return {
+        "grade_band": grade_band,
+        "label": band.label,
+        "grade_levels": band.grade_levels,
+        "subjects": [
+            {
+                "name": s.name,
+                "strands": s.strands,
+                "marzano_entry_point": s.marzano_entry_point,
+                "marzano_target": s.marzano_target,
+                "common_passions": s.common_passions,
+                "description": s.description,
+                "standards_framework": s.standards_framework,
+            }
+            for s in subjects
+        ],
+    }
+
+
+@app.get("/international")
+async def get_international():
+    """
+    International grade-level and Marzano taxonomy mapping data.
+    Used by the v0.4.0 international classroom feature.
+    Returns roadmap data structure while that feature is in development.
+    """
+    return international_api()
+
+
 # ─────────────────────────────────────────────────────────────
 # Document ingestion (Haystack RAG)
 # ─────────────────────────────────────────────────────────────
@@ -209,39 +254,58 @@ async def get_passions():
 async def ingest_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    doc_type:     str = Form("marzano_reference"),
+    state:        str = Form(""),
+    grade_band:   str = Form(""),
+    subject_area: str = Form(""),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Upload a PDF/document to the Marzano knowledge base.
+    doc_type: "marzano_reference" (general) or "standards" (state/grade specific).
+    For "standards" documents, provide state, grade_band, and subject_area tags.
     Returns a job_id immediately; progress arrives via SSE.
     """
-    content = await file.read()
+    content_bytes = await file.read()
     job_id = str(uuid.uuid4())
+
+    tags = {
+        "doc_type":    doc_type,
+        "state":       state or None,
+        "grade_band":  grade_band or None,
+        "subject_area": subject_area or None,
+    }
 
     job = IngestionJob(
         id=job_id,
         filename=file.filename,
-        original_size_bytes=len(content),
+        original_size_bytes=len(content_bytes),
         status="pending",
+        doc_type=doc_type,
+        state=state or None,
+        grade_band=grade_band or None,
+        subject_area=subject_area or None,
     )
     session.add(job)
     await session.commit()
 
-    # Run ingestion as a background task so we return immediately
     background_tasks.add_task(
-        _run_ingestion, content, file.filename, job_id
+        _run_ingestion, content_bytes, file.filename, job_id, tags
     )
 
     return {
         "job_id": job_id,
         "filename": file.filename,
-        "size_bytes": len(content),
+        "size_bytes": len(content_bytes),
         "status": "pending",
+        "doc_type": doc_type,
+        "tags": tags,
         "message": "Indexing started. Watch SSE stream for progress.",
     }
 
 
-async def _run_ingestion(content: bytes, filename: str, job_id: str):
+async def _run_ingestion(content: bytes, filename: str, job_id: str, tags: dict = None):
+    tags = tags or {}
     async with AsyncSessionLocal() as session:
         await ingest_document(
             file_bytes=content,
@@ -249,6 +313,10 @@ async def _run_ingestion(content: bytes, filename: str, job_id: str):
             job_id=job_id,
             notify=notif_manager.broadcast,
             db_session=session,
+            doc_type=tags.get("doc_type", "marzano_reference"),
+            state=tags.get("state"),
+            grade_band=tags.get("grade_band"),
+            subject_area=tags.get("subject_area"),
         )
 
 
@@ -369,6 +437,8 @@ async def create_assessment(
     student_name: str = Form(...),
     subject: str = Form(...),
     grade_level: str = Form(...),
+    grade_band: str = Form(""),
+    student_state: str = Form(""),
     student_passion: str = Form(...),
     artifact_description: str = Form(...),
     student_reflection: str = Form(""),
@@ -423,9 +493,21 @@ async def create_assessment(
         else:
             file_notes = f"[File artifact: {filename}]"
 
-    # Build prompts
-    system_prompt = build_system_prompt(subject, student_passion, grade_level)
-    rag_context = await rag.context_block(f"{subject} {student_passion} {artifact_description[:200]}")
+    # Build prompts with curriculum + standards context
+    resolved_band = grade_band or grade_band_for_level(grade_level)
+    curriculum_ctx = build_curriculum_context(resolved_band, subject)
+    system_prompt = build_system_prompt(
+        subject, student_passion, grade_level,
+        state=student_state or None,
+        curriculum_context=curriculum_ctx,
+    )
+    rag_query = f"{subject} {student_passion} {grade_level} {artifact_description[:200]}"
+    rag_context = await rag.context_block(
+        rag_query,
+        state=student_state or None,
+        grade_band=resolved_band or None,
+        subject_area=subject or None,
+    )
     if rag_context:
         system_prompt += rag_context
 

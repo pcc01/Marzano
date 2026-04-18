@@ -3,7 +3,7 @@
 > AI-powered educational assessment grounded in **Marzano's New Taxonomy of Educational Objectives**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.3.0-blue)](https://github.com/pcc01/Marzano/blob/main/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0--dev-orange)](https://github.com/pcc01/Marzano/blob/main/CHANGELOG.md)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)](https://www.postgresql.org/)
@@ -35,7 +35,11 @@ A student passionate about **photography** demonstrates the same geometry standa
 | PostgreSQL — full async persistence | ✅ |
 | Pluggable AI — Anthropic API or local Ollama | ✅ |
 | Passion-to-curriculum mapping | ✅ |
-| Standards alignment (Common Core, NGSS) | 🔜 |
+| **Core curriculum registry** — 37 subjects across 5 grade bands | ✅ |
+| **State standards RAG** — tag documents by state/grade/subject, filtered retrieval | ✅ |
+| **Standards citations in feedback** — AI names standard codes in taxonomy breakdown | ✅ |
+| **International mapping foundation** — 10 countries, grade equivalencies, Marzano ↔ PISA/IB/GCSE | 🏗️ v0.4.0 |
+| International classroom UI — country selector, localised grade levels | 🔜 v0.4.0 |
 | Batch assessment upload | 🔜 |
 | PDF export of approved feedback | 🔜 |
 | LMS integration (Canvas, Google Classroom) | 🔜 |
@@ -269,6 +273,80 @@ To add a new passion domain, edit `PASSION_MATH_CONNECTIONS` in `backend/marzano
 
 ---
 
+## Core Curriculum Registry
+
+Both the teacher dashboard and student portal now use a **structured subject selector** instead of a free-text field. When a teacher or student selects a grade band, the subject dropdown is populated from the backend registry. Each subject carries:
+
+- Content strands (e.g. "Ratios & proportional relationships", "Functions")
+- Minimum Marzano level expected for proficiency
+- Target Marzano level for strong competency
+- Suggested passion connections
+- Standards framework (Common Core, NGSS, AP College Board, etc.)
+
+The registry (`backend/curriculum.py`) covers 37 subjects across 5 grade bands:
+
+| Grade band | Grades | Subjects |
+|---|---|---|
+| Early Elementary | K–2 | Number Sense, Early Science, Foundational Literacy, Community & Society |
+| Upper Elementary | 3–5 | Elementary Math, Elementary Science, Reading & Writing, Geography & US History |
+| Middle School | 6–8 | Pre-Algebra, Algebra I, Life/Earth/Physical Science, ELA, World History, US History, Visual Arts, Music |
+| High School Early | 9–10 | Algebra I/II, Geometry, Biology, Chemistry, English 9/10, World History, US History, Computer Science, Photography |
+| High School Advanced | 11–12 | Pre-Calculus, AP Calculus, AP Statistics, Physics, Environmental Science, AP English, Government, Economics |
+
+To add subjects: edit `SUBJECTS` in `backend/curriculum.py`.
+
+---
+
+## State Standards via RAG
+
+Upload state graduation and grade-completion guidelines as tagged PDF documents through the **Index Documents** panel. When a document is tagged as a standards document (rather than a Marzano reference), it receives metadata tags for state, grade band, and subject area.
+
+The retrieval layer filters chunks at query time — a Grade 6 Science assessment only pulls Grade 6 Science standards, not Grade 12 Math graduation requirements.
+
+**How to index state standards:**
+
+1. Download your state's standards PDF (most are freely available from state education department websites)
+2. Open the teacher dashboard → **Index Documents**
+3. Upload the PDF
+4. Set document type to **"State / grade standards document"**
+5. Enter the state name, grade band, and optionally the subject area
+6. Click **Index Document** and watch the progress bar
+
+Once indexed, the AI will automatically name specific standard codes and descriptions in its feedback when they match the student's work. The feedback taxonomy breakdown will include a **Standards cited** section.
+
+---
+
+## International Classroom Mapping (v0.4.0 Roadmap)
+
+The foundation for international classroom support is built in `backend/international.py`. This module defines the full mapping architecture that v0.4.0 will expose through the UI.
+
+**What is mapped:**
+
+| Mapping | Countries / frameworks |
+|---|---|
+| US grade K–12 ↔ international equivalents | UK, Australia, Canada, France, Germany, Japan, IB, New Zealand, Singapore |
+| Marzano taxonomy ↔ international competency frameworks | GCSE/A-Level, ACARA, IB MYP/DP, French Éducation nationale, German KMK Bildungsstandards, PISA, TIMSS |
+
+**Marzano ↔ international framework equivalencies:**
+
+| Marzano level | IB DP equivalent | GCSE equivalent | PISA level |
+|---|---|---|---|
+| Retrieval | State, Identify, Recall | Working below standard | Level 1–2 |
+| Comprehension | Describe, Explain, Summarise | Expected standard | Level 2–3 |
+| Analysis | Analyse, Compare, Evaluate | Greater depth | Level 4–5 |
+| Knowledge Utilization | Design, Justify, Synthesise | Exceeding / A* | Level 5–6 |
+| Metacognitive | Theory of Knowledge / EE reflection | PLTS | Self-regulated learning |
+
+**v0.4.0 will add:**
+- Country selector on both teacher dashboard and student portal
+- Automatic grade level translation (e.g. "Year 10" ↔ "Grade 9")
+- Feedback that references both Marzano levels and the student's national framework equivalents
+- Support for provincial curricula (Ontario, BC, Alberta, Quebec)
+
+To add a new country in the meantime: add an entry to `COUNTRIES`, `GRADE_LEVEL_MAP`, and `MARZANO_TO_INTERNATIONAL` in `backend/international.py`.
+
+---
+
 ## API Reference
 
 Full interactive docs at `http://localhost:8000/docs`.
@@ -288,6 +366,14 @@ Full interactive docs at `http://localhost:8000/docs`.
 |---|---|---|
 | `/student/submit` | POST | Student artifact submission (sets `submitted_by=student`) |
 | `/student/status/{id}` | GET | Check whether a submission has been approved |
+
+### Curriculum & Standards
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/curriculum` | GET | Full curriculum registry — all grade bands and subjects |
+| `/curriculum/{grade_band}` | GET | Subjects for one grade band with Marzano targets |
+| `/international` | GET | International grade mapping and Marzano ↔ framework equivalencies |
 
 ### Haystack Ingestion
 

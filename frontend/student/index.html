@@ -343,23 +343,35 @@
     <div id="form-step-1">
       <div class="card">
         <div class="card-title">About you</div>
+        <div class="form-group">
+          <label>Your name</label>
+          <input type="text" id="student_name" placeholder="First and last name" autocomplete="name">
+        </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Your name</label>
-            <input type="text" id="student_name" placeholder="First and last name" autocomplete="name">
+            <label>Grade band</label>
+            <select id="grade_band_sel" onchange="loadStudentSubjects(this.value)">
+              <option value="">Select…</option>
+              <option value="elementary_k2">Early Elementary (K–2)</option>
+              <option value="elementary_3_5">Upper Elementary (3–5)</option>
+              <option value="middle_6_8">Middle School (6–8)</option>
+              <option value="high_9_10">High School (9–10)</option>
+              <option value="high_11_12">High School Advanced (11–12)</option>
+            </select>
           </div>
           <div class="form-group">
-            <label>Grade</label>
+            <label>Your grade</label>
             <select id="grade_level">
-              <option value="">Select…</option>
-              <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
-              <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+              <option value="">Select grade band first…</option>
             </select>
           </div>
         </div>
         <div class="form-group">
           <label>Subject / class</label>
-          <input type="text" id="subject" placeholder="e.g. Grade 10 Mathematics">
+          <select id="subject">
+            <option value="">Select grade band first…</option>
+          </select>
+          <div id="subject-hint" style="font-size:12px;color:var(--muted);margin-top:5px"></div>
         </div>
       </div>
       <button class="btn btn-primary" onclick="goStep(2)">Next →</button>
@@ -585,6 +597,39 @@ zone.addEventListener('drop', e => {
   }
 });
 
+// ── Curriculum loader ──
+let _studentCurrCache = null;
+async function loadStudentSubjects(bandId) {
+  const gradeSel   = document.getElementById('grade_level');
+  const subjectSel = document.getElementById('subject');
+  const BAND_GRADES = {
+    elementary_k2: ['Kindergarten','Grade 1','Grade 2'],
+    elementary_3_5: ['Grade 3','Grade 4','Grade 5'],
+    middle_6_8:   ['Grade 6','Grade 7','Grade 8'],
+    high_9_10:    ['Grade 9','Grade 10'],
+    high_11_12:   ['Grade 11','Grade 12'],
+  };
+  gradeSel.innerHTML = '<option value="">Select your grade…</option>' +
+    (BAND_GRADES[bandId] || []).map(g => `<option>${g}</option>`).join('');
+  try {
+    if (!_studentCurrCache) {
+      const r = await fetch(`${API}/curriculum`);
+      _studentCurrCache = await r.json();
+    }
+    const subs = (_studentCurrCache.subjects || {})[bandId] || [];
+    subjectSel.innerHTML = '<option value="">Select your subject…</option>' +
+      subs.map(s => `<option value="${s.name}" data-passions="${(s.common_passions||[]).join(',')}">${s.name}</option>`).join('');
+    subjectSel.onchange = function() {
+      const opt = this.options[this.selectedIndex];
+      const passions = (opt && opt.dataset && opt.dataset.passions ? opt.dataset.passions : '').split(',').filter(Boolean);
+      const hint = document.getElementById('subject-hint');
+      if (hint) hint.textContent = passions.length ? 'Related passions: ' + passions.join(', ') : '';
+    };
+  } catch(e) {
+    subjectSel.innerHTML = '<option value="">Could not load subjects</option>';
+  }
+}
+
 // ── Submit ──
 async function submitWork() {
   if (!validateStep(3)) return;
@@ -596,6 +641,7 @@ async function submitWork() {
   const fd = new FormData();
   fd.append('student_name', v('student_name'));
   fd.append('grade_level', v('grade_level'));
+  fd.append('grade_band', document.getElementById('grade_band_sel')?.value || '');
   fd.append('subject', v('subject'));
   fd.append('student_passion', v('student_passion'));
   fd.append('artifact_description', v('artifact_description'));
@@ -676,7 +722,7 @@ function resetForm() {
   });
 
   // Clear fields
-  ['student_name','grade_level','subject','student_passion','artifact_description','student_reflection'].forEach(id => {
+  ['student_name','grade_level','subject','student_passion','artifact_description','student_reflection','grade_band_sel'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });

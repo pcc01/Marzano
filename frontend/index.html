@@ -322,19 +322,60 @@
           <div class="card-title">Student</div>
           <div class="form-row">
             <div class="form-group"><label>Name</label><input name="student_name" placeholder="Full name" required></div>
-            <div class="form-group"><label>Grade</label>
-              <select name="grade_level" required>
-                <option value="">Select…</option>
-                <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
-                <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
-              </select>
+            <div class="form-group"><label>State / Province</label>
+              <input name="student_state" id="student_state" placeholder="e.g. California (for standards alignment)" list="states-list">
+              <datalist id="states-list">
+                <option value="Alabama"><option value="Alaska"><option value="Arizona">
+                <option value="Arkansas"><option value="California"><option value="Colorado">
+                <option value="Connecticut"><option value="Delaware"><option value="Florida">
+                <option value="Georgia"><option value="Hawaii"><option value="Idaho">
+                <option value="Illinois"><option value="Indiana"><option value="Iowa">
+                <option value="Kansas"><option value="Kentucky"><option value="Louisiana">
+                <option value="Maine"><option value="Maryland"><option value="Massachusetts">
+                <option value="Michigan"><option value="Minnesota"><option value="Mississippi">
+                <option value="Missouri"><option value="Montana"><option value="Nebraska">
+                <option value="Nevada"><option value="New Hampshire"><option value="New Jersey">
+                <option value="New Mexico"><option value="New York"><option value="North Carolina">
+                <option value="North Dakota"><option value="Ohio"><option value="Oklahoma">
+                <option value="Oregon"><option value="Pennsylvania"><option value="Rhode Island">
+                <option value="South Carolina"><option value="South Dakota"><option value="Tennessee">
+                <option value="Texas"><option value="Utah"><option value="Vermont">
+                <option value="Virginia"><option value="Washington"><option value="West Virginia">
+                <option value="Wisconsin"><option value="Wyoming">
+              </datalist>
             </div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label>Subject</label><input name="subject" placeholder="e.g. Grade 10 Mathematics — Geometry" required></div>
+            <div class="form-group">
+              <label>Grade band</label>
+              <select id="grade_band_sel" onchange="loadSubjects(this.value)" required>
+                <option value="">Select grade band…</option>
+                <option value="elementary_k2">Early Elementary (K–2)</option>
+                <option value="elementary_3_5">Upper Elementary (3–5)</option>
+                <option value="middle_6_8">Middle School (6–8)</option>
+                <option value="high_9_10">High School Early (9–10)</option>
+                <option value="high_11_12">High School Advanced (11–12)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Grade level</label>
+              <select name="grade_level" id="grade_level_sel" required>
+                <option value="">Select grade band first…</option>
+              </select>
+              <input type="hidden" name="grade_band" id="grade_band_hidden">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Subject</label>
+              <select name="subject" id="subject_sel" required onchange="onSubjectChange(this)">
+                <option value="">Select grade band first…</option>
+              </select>
+              <div id="subject-hint" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+            </div>
             <div class="form-group">
               <label>Passion / Context</label>
-              <select name="student_passion" required onchange="updateHint(this)">
+              <select name="student_passion" id="passion_sel" required onchange="updateHint(this)">
                 <option value="">Select…</option>
                 <option value="architecture">Architecture</option>
                 <option value="astronomy">Astronomy</option>
@@ -396,6 +437,10 @@
         </div>
         <div class="summary-box" style="margin-bottom:10px"><h4>Next Level Challenge</h4><p id="rv-next"></p></div>
         <div class="summary-box"><h4>Passion Integration</h4><p id="rv-passion"></p></div>
+        <div id="rv-standards-wrap" class="summary-box" style="display:none;margin-top:10px">
+          <h4>Standards cited</h4>
+          <p id="rv-standards" style="font-size:12px"></p>
+        </div>
       </div>
 
       <div class="card">
@@ -459,6 +504,63 @@
         </div>
         <input type="file" id="ingest-file" style="display:none"
           accept=".pdf,.docx,.txt" onchange="handleIngestFile(this)">
+
+        <div style="margin-top:14px">
+          <div class="form-group">
+            <label>Document type</label>
+            <select id="ingest-doc-type" onchange="toggleStandardsFields(this.value)">
+              <option value="marzano_reference">Marzano reference — general knowledge base</option>
+              <option value="standards">State / grade standards document</option>
+            </select>
+          </div>
+          <div id="standards-fields" style="display:none">
+            <div class="form-row">
+              <div class="form-group">
+                <label>State</label>
+                <input id="ingest-state" placeholder="e.g. California" list="ingest-states-list">
+                <datalist id="ingest-states-list">
+                  <option value="Alabama"><option value="Alaska"><option value="Arizona">
+                  <option value="Arkansas"><option value="California"><option value="Colorado">
+                  <option value="Connecticut"><option value="Delaware"><option value="Florida">
+                  <option value="Georgia"><option value="Hawaii"><option value="Idaho">
+                  <option value="Illinois"><option value="Indiana"><option value="Iowa">
+                  <option value="Kansas"><option value="Kentucky"><option value="Louisiana">
+                  <option value="Maine"><option value="Maryland"><option value="Massachusetts">
+                  <option value="Michigan"><option value="Minnesota"><option value="Mississippi">
+                  <option value="Missouri"><option value="Montana"><option value="Nebraska">
+                  <option value="Nevada"><option value="New Hampshire"><option value="New Jersey">
+                  <option value="New Mexico"><option value="New York"><option value="North Carolina">
+                  <option value="North Dakota"><option value="Ohio"><option value="Oklahoma">
+                  <option value="Oregon"><option value="Pennsylvania"><option value="Rhode Island">
+                  <option value="South Carolina"><option value="South Dakota"><option value="Tennessee">
+                  <option value="Texas"><option value="Utah"><option value="Vermont">
+                  <option value="Virginia"><option value="Washington"><option value="West Virginia">
+                  <option value="Wisconsin"><option value="Wyoming">
+                </datalist>
+              </div>
+              <div class="form-group">
+                <label>Grade band</label>
+                <select id="ingest-grade-band">
+                  <option value="">All grades</option>
+                  <option value="elementary_k2">Early Elementary (K–2)</option>
+                  <option value="elementary_3_5">Upper Elementary (3–5)</option>
+                  <option value="middle_6_8">Middle School (6–8)</option>
+                  <option value="high_9_10">High School Early (9–10)</option>
+                  <option value="high_11_12">High School Advanced (11–12)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Subject area (optional — leave blank to apply to all subjects)</label>
+              <input id="ingest-subject-area" placeholder="e.g. Mathematics, Science, ELA">
+            </div>
+            <div style="font-size:11px;color:var(--muted);padding:8px 0">
+              These tags allow the AI to retrieve only standards relevant to each student's
+              grade and subject when generating feedback.
+            </div>
+          </div>
+        </div>
+
         <div class="btn-row" style="margin-top:14px">
           <button class="btn btn-primary" id="ingest-btn" onclick="startIngestion()" disabled>
             Index Document
@@ -611,6 +713,72 @@ function clearUnread() {
   document.getElementById('notif-badge').style.display = 'none';
 }
 
+// ─── Curriculum selectors ───
+let _curriculumCache = null;
+
+async function loadSubjects(bandId) {
+  const gradeSel   = document.getElementById('grade_level_sel');
+  const subjectSel = document.getElementById('subject_sel');
+  const hiddenBand = document.getElementById('grade_band_hidden');
+  if (hiddenBand) hiddenBand.value = bandId;
+
+  if (!bandId) {
+    gradeSel.innerHTML   = '<option value="">Select grade band first…</option>';
+    subjectSel.innerHTML = '<option value="">Select grade band first…</option>';
+    return;
+  }
+
+  // Populate grade levels immediately from known data
+  const BAND_GRADES = {
+    elementary_k2: ['Kindergarten','Grade 1','Grade 2'],
+    elementary_3_5: ['Grade 3','Grade 4','Grade 5'],
+    middle_6_8: ['Grade 6','Grade 7','Grade 8'],
+    high_9_10: ['Grade 9','Grade 10'],
+    high_11_12: ['Grade 11','Grade 12'],
+  };
+  const grades = BAND_GRADES[bandId] || [];
+  gradeSel.innerHTML = '<option value="">Select grade…</option>' +
+    grades.map(g => `<option>${g}</option>`).join('');
+
+  // Load subjects from API
+  try {
+    if (!_curriculumCache) {
+      const res = await fetch(`${API}/curriculum`);
+      _curriculumCache = await res.json();
+    }
+    const subjects = (_curriculumCache.subjects || {})[bandId] || [];
+    subjectSel.innerHTML = '<option value="">Select subject…</option>' +
+      subjects.map(s => `<option value="${esc(s.name)}" data-target="${s.marzano_target}" data-strands="${esc(s.strands.join(', '))}" data-passions="${s.common_passions.join(',')}">${esc(s.name)}</option>`).join('');
+  } catch {
+    subjectSel.innerHTML = '<option value="">Could not load subjects</option>';
+  }
+}
+
+function onSubjectChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) {
+    document.getElementById('subject-hint').textContent = '';
+    return;
+  }
+  const target  = opt.dataset.target || '';
+  const strands = opt.dataset.strands || '';
+  const passions = (opt.dataset.passions || '').split(',').filter(Boolean);
+  document.getElementById('subject-hint').textContent =
+    (target ? `Marzano target: ${target.replace(/_/g,' ')}` : '') +
+    (strands ? ` · Strands: ${strands}` : '');
+  // Suggest first matching passion
+  const passionSel = document.getElementById('passion_sel');
+  if (passions.length && passionSel && !passionSel.value) {
+    const match = Array.from(passionSel.options).find(o => passions.includes(o.value));
+    if (match) { passionSel.value = match.value; updateHint(passionSel); }
+  }
+}
+
+function toggleStandardsFields(val) {
+  const el = document.getElementById('standards-fields');
+  if (el) el.style.display = val === 'standards' ? 'block' : 'none';
+}
+
 // ─── Passion hint ───
 const HINTS = {
   architecture: 'geometry · ratios · structural load · trig',
@@ -653,6 +821,11 @@ async function submitAssessment(e) {
 
   try {
     const fd = new FormData(document.getElementById('assess-form'));
+    // Append hidden fields that aren't native form controls
+    const band = document.getElementById('grade_band_hidden');
+    if (band) fd.set('grade_band', band.value || '');
+    const stateEl = document.querySelector('[name="student_state"]');
+    if (stateEl) fd.set('student_state', stateEl.value || '');
     const res = await fetch(`${API}/assess`, { method: 'POST', body: fd });
     if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Server error'); }
     const data = await res.json();
@@ -731,6 +904,14 @@ async function loadReview(id) {
     document.getElementById('rv-next').textContent = f.next_level_prompt || '—';
     document.getElementById('rv-passion').textContent = f.passion_integration || '—';
     document.getElementById('rv-reasoning').textContent = f.ai_reasoning || '—';
+    const stds = (f.standards_cited || []).filter(Boolean);
+    const stdsWrap = document.getElementById('rv-standards-wrap');
+    if (stds.length) {
+      document.getElementById('rv-standards').textContent = stds.join(' · ');
+      stdsWrap.style.display = 'block';
+    } else {
+      stdsWrap.style.display = 'none';
+    }
     document.getElementById('tc-comments').value = d.teacher_comments || '';
     document.getElementById('tc-level').value = d.teacher_edited_level || '';
 
@@ -806,22 +987,46 @@ async function startIngestion() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span>Starting…';
 
+  const docType    = document.getElementById('ingest-doc-type')?.value || 'marzano_reference';
+  const state      = document.getElementById('ingest-state')?.value || '';
+  const gradeBand  = document.getElementById('ingest-grade-band')?.value || '';
+  const subjectArea= document.getElementById('ingest-subject-area')?.value || '';
+
+  // Validate standards docs have at least state
+  if (docType === 'standards' && !state.trim()) {
+    showToast('⚠️', 'State required', 'Please enter a state for standards documents.', 'error', 5000);
+    btn.disabled = false;
+    btn.innerHTML = 'Index Document';
+    return;
+  }
+
   const fd = new FormData();
   fd.append('file', ingestBlob);
+  fd.append('doc_type', docType);
+  fd.append('state', state);
+  fd.append('grade_band', gradeBand);
+  fd.append('subject_area', subjectArea);
+
   try {
     const res = await fetch(`${API}/ingest`, { method: 'POST', body: fd });
     if (!res.ok) throw new Error('Upload failed');
     const data = await res.json();
-    addJobRow(data.job_id, data.filename, 0);
-    btn.textContent = 'Index Document';
+    const label = docType === 'standards'
+      ? `${data.filename} [${[state, gradeBand, subjectArea].filter(Boolean).join(' · ')}]`
+      : data.filename;
+    addJobRow(data.job_id, label, 0);
+    btn.innerHTML = 'Index Document';
     document.getElementById('ingest-preview').textContent = '';
     ingestBlob = null;
     document.getElementById('ingest-file').value = '';
+    // Reset tag fields
+    if (document.getElementById('ingest-state')) document.getElementById('ingest-state').value = '';
+    if (document.getElementById('ingest-grade-band')) document.getElementById('ingest-grade-band').value = '';
+    if (document.getElementById('ingest-subject-area')) document.getElementById('ingest-subject-area').value = '';
   } catch(err) {
     showToast('⚠️', 'Upload failed', err.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = 'Index Document';
   }
 }
 
@@ -862,19 +1067,24 @@ async function loadJobs() {
     const jobs = await res.json();
     const c = document.getElementById('jobs-list');
     if (!jobs.length) { c.innerHTML = '<p style="color:var(--muted);font-size:13px">No jobs yet.</p>'; return; }
-    c.innerHTML = jobs.map(j => `
+    c.innerHTML = jobs.map(j => {
+      const tags = [j.doc_type === 'standards' ? 'Standards' : 'Reference', j.state, j.grade_band, j.subject_area].filter(Boolean);
+      const pct  = j.status === 'complete' ? 100 : j.chunks_total ? Math.round(j.chunks_done / j.chunks_total * 100) : 0;
+      return `
       <div class="job-row">
         <div class="jr-top">
           <span class="job-filename">${esc(j.filename)}</span>
           <span class="badge badge-${j.status === 'complete' ? 'complete' : j.status === 'error' ? 'error' : 'processing'}">${j.status}</span>
         </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${j.status==='complete'?100:j.chunks_total?Math.round(j.chunks_done/j.chunks_total*100):0}%"></div></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:5px">
+        ${tags.length > 1 ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">${tags.map(t => `<span style="background:var(--bg);border:0.5px solid var(--border);border-radius:4px;padding:1px 6px;margin-right:4px">${esc(t)}</span>`).join('')}</div>` : ''}
+        <div class="progress-bar" style="margin-top:6px"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">
           ${j.chunks_total ? `${j.chunks_done}/${j.chunks_total} chunks` : ''}
           ${j.error_message ? `<span style="color:var(--coral)"> — ${esc(j.error_message)}</span>` : ''}
           · ${fmtDate(j.created_at)}
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch {}
 }
 
