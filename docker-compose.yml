@@ -2,21 +2,43 @@ version: "3.9"
 
 services:
 
-  # ── Backend API ──────────────────────────────────────────
+  # ── PostgreSQL ────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: marzano
+      POSTGRES_PASSWORD: marzano
+      POSTGRES_DB: marzano
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marzano"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ── Backend API ───────────────────────────────────────────
   backend:
     build: ./backend
     env_file: .env
     environment:
-      - DATA_DIR=/data/assessments
+      - DATABASE_URL=postgresql+asyncpg://marzano:marzano@postgres:5432/marzano
       - RAG_INDEX_PATH=/data/marzano_index.json
+      - DATA_DIR=/data
     volumes:
-      - assessment_data:/data
-      - ./backend:/app          # live reload in dev
+      - rag_data:/data
+      - ./backend:/app       # live reload in dev
     ports:
-      - "8000:8000"             # direct API access for dev
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
-  # ── Frontend (nginx) ─────────────────────────────────────
+  # ── Frontend (nginx) ──────────────────────────────────────
   frontend:
     image: nginx:alpine
     volumes:
@@ -28,7 +50,7 @@ services:
       - backend
     restart: unless-stopped
 
-  # ── Ollama (optional — uncomment to enable local AI) ─────
+  # ── Ollama (optional — uncomment to use local AI) ─────────
   # ollama:
   #   image: ollama/ollama
   #   volumes:
@@ -44,5 +66,6 @@ services:
   #             capabilities: [gpu]
 
 volumes:
-  assessment_data:
+  postgres_data:
+  rag_data:
   # ollama_models:

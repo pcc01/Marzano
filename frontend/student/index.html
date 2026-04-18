@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Submit Your Work — Marzano Learning Portal</title>
+<style>
+  :root {
+    --bg: #f5f4f1;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --text: #1a1a18;
+    --muted: #6b6b65;
+    --accent: #2d6be4;
+    --accent-light: #eef3fd;
+    --accent-dark: #1a4db3;
+    --teal: #0f6e56;
+    --teal-light: #e1f5ee;
+    --amber: #854f0b;
+    --amber-light: #fdf3e0;
+    --green: #2d6b3a;
+    --green-light: #e8f5eb;
+    --coral: #b84034;
+    --coral-light: #fdf0ef;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--accent); display: flex; align-items: center;
+    justify-content: center; color: white; font-weight: 700; font-size: 14px;
+  }
+  .logo-text { font-weight: 600; font-size: 15px; }
+  .logo-sub { font-size: 12px; color: var(--muted); }
+  .teacher-link {
+    font-size: 13px; color: var(--muted); text-decoration: none;
+    padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+    transition: all 0.15s;
+  }
+  .teacher-link:hover { background: var(--bg); color: var(--text); }
+
+  /* Layout */
+  .page {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Hero */
+  .hero { text-align: center; margin-bottom: 36px; }
+  .hero h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  .hero p { color: var(--muted); font-size: 15px; max-width: 480px; margin: 0 auto; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--muted); margin-bottom: 16px;
+  }
+
+  /* Form */
+  .form-group { margin-bottom: 18px; }
+  .form-group label {
+    display: block; font-size: 13px; font-weight: 600;
+    margin-bottom: 6px; color: var(--text);
+  }
+  .form-group .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px; font-size: 14px;
+    font-family: inherit; background: var(--surface);
+    color: var(--text); transition: border-color 0.15s; outline: none;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(45,107,228,0.1);
+  }
+  .form-group textarea { resize: vertical; min-height: 100px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* Passion cards — visual selector */
+  .passion-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .passion-option {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface);
+  }
+  .passion-option:hover { border-color: var(--accent); background: var(--accent-light); }
+  .passion-option.selected { border-color: var(--accent); background: var(--accent-light); }
+  .passion-option .emoji { font-size: 24px; display: block; margin-bottom: 4px; }
+  .passion-option .label { font-size: 12px; font-weight: 600; color: var(--text); }
+  .passion-option .concepts { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .passion-hidden { display: none; }
+
+  /* Upload */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg);
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  .upload-zone .upload-icon { font-size: 28px; margin-bottom: 8px; }
+  .upload-zone p { color: var(--muted); font-size: 13px; }
+  .upload-zone strong { color: var(--accent); }
+  .file-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--green-light); color: var(--green);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 12px; font-weight: 600; margin-top: 8px;
+  }
+
+  /* Tips accordion */
+  .tips {
+    background: var(--amber-light);
+    border: 1px solid rgba(133,79,11,0.15);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .tips h3 { font-size: 13px; font-weight: 600; color: var(--amber); margin-bottom: 8px; }
+  .tips ul { padding-left: 16px; font-size: 13px; color: var(--text); }
+  .tips li { margin-bottom: 4px; }
+
+  /* Steps indicator */
+  .steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .steps::before {
+    content: '';
+    position: absolute;
+    top: 16px; left: 16px; right: 16px;
+    height: 2px;
+    background: var(--border);
+    z-index: 0;
+  }
+  .step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+  .step-dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 6px; font-size: 13px; font-weight: 700;
+    color: var(--muted); transition: all 0.2s;
+  }
+  .step.active .step-dot { background: var(--accent); border-color: var(--accent); color: white; }
+  .step.done .step-dot { background: var(--teal); border-color: var(--teal); color: white; }
+  .step-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .step.active .step-label { color: var(--accent); font-weight: 600; }
+  .step.done .step-label { color: var(--teal); }
+
+  /* Buttons */
+  .btn {
+    padding: 12px 24px; border-radius: 10px; font-size: 14px;
+    font-weight: 600; cursor: pointer; border: none;
+    transition: all 0.15s; font-family: inherit; display: inline-flex;
+    align-items: center; gap: 8px;
+  }
+  .btn-primary { background: var(--accent); color: white; width: 100%; justify-content: center; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary {
+    background: var(--surface); color: var(--text);
+    border: 1.5px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-row { display: flex; gap: 10px; }
+
+  /* Spinner */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2.5px solid rgba(255,255,255,0.35);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Success state */
+  .success-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--green-light); display: flex;
+    align-items: center; justify-content: center;
+    font-size: 28px; margin: 0 auto 16px;
+  }
+  .success-card {
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 40px 32px;
+    box-shadow: var(--shadow);
+  }
+  .success-card h2 { font-size: 22px; margin-bottom: 8px; }
+  .success-card p { color: var(--muted); margin-bottom: 24px; font-size: 14px; }
+  .tracking-id {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: monospace;
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .copy-btn {
+    font-size: 12px; padding: 4px 10px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--surface);
+    cursor: pointer; font-family: inherit; color: var(--muted);
+  }
+  .copy-btn:hover { background: var(--bg); color: var(--text); }
+
+  /* Status checker */
+  .status-check { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .status-check h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .status-input-row { display: flex; gap: 10px; }
+  .status-input-row input {
+    flex: 1; padding: 10px 14px; border: 1.5px solid var(--border);
+    border-radius: 10px; font-size: 13px; font-family: inherit; outline: none;
+  }
+  .status-input-row input:focus { border-color: var(--accent); }
+  .status-result {
+    margin-top: 12px; padding: 12px 16px; border-radius: 10px;
+    font-size: 13px; display: none;
+  }
+  .status-pending { background: var(--amber-light); color: var(--amber); }
+  .status-reviewed { background: var(--green-light); color: var(--green); }
+  .status-error { background: var(--coral-light); color: var(--coral); }
+
+  /* Alert */
+  .alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
+  .alert-error { background: var(--coral-light); color: var(--coral); }
+
+  @media (max-width: 560px) {
+    .form-row { grid-template-columns: 1fr; }
+    .passion-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">M</div>
+    <div>
+      <div class="logo-text">Learning Portal</div>
+      <div class="logo-sub">Submit your work for feedback</div>
+    </div>
+  </div>
+  <a href="/" class="teacher-link">Teacher dashboard →</a>
+</header>
+
+<div class="page">
+
+  <!-- ── Submit Panel ── -->
+  <div id="panel-submit" class="panel active">
+
+    <div class="hero">
+      <h1>Share your work</h1>
+      <p>Tell us about what you made, built, or discovered. Your teacher will review it and send you personalised feedback.</p>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps" id="steps">
+      <div class="step active" id="step-1">
+        <div class="step-dot">1</div>
+        <div class="step-label">About you</div>
+      </div>
+      <div class="step" id="step-2">
+        <div class="step-dot">2</div>
+        <div class="step-label">Your passion</div>
+      </div>
+      <div class="step" id="step-3">
+        <div class="step-dot">3</div>
+        <div class="step-label">Your work</div>
+      </div>
+    </div>
+
+    <div id="submit-alert" class="alert alert-error" style="display:none"></div>
+
+    <!-- Step 1: About you -->
+    <div id="form-step-1">
+      <div class="card">
+        <div class="card-title">About you</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Your name</label>
+            <input type="text" id="student_name" placeholder="First and last name" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label>Grade</label>
+            <select id="grade_level">
+              <option value="">Select…</option>
+              <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+              <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Subject / class</label>
+          <input type="text" id="subject" placeholder="e.g. Grade 10 Mathematics">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="goStep(2)">Next →</button>
+    </div>
+
+    <!-- Step 2: Passion -->
+    <div id="form-step-2" style="display:none">
+      <div class="card">
+        <div class="card-title">What are you passionate about?</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+          Pick the one that best fits your project. This helps us connect your work to the right math concepts.
+        </p>
+        <input type="hidden" id="student_passion" value="">
+        <div class="passion-grid">
+          <div class="passion-option" onclick="selectPassion('architecture', this)">
+            <span class="emoji">🏛️</span>
+            <div class="label">Architecture</div>
+            <div class="concepts">Geometry · ratios · load</div>
+          </div>
+          <div class="passion-option" onclick="selectPassion('astronomy', this)">
+            <span class="emoji">🔭</span>
+            <div class="label">Astronomy</div>
+            <div class="concepts">Scale · notation · orbits</div>
+          </div>
+          <div class="passion-option" onclick="selectPassion('barrel_making', this)">
+            <span class="emoji">🪣</span>
+            <div class="label">Craft / Making</div>
+            <div class="concepts">Volume · surface area</div>
+          </div>
+          <div class="passion-option" onclick="selectPassion('photography', this)">
+            <span class="emoji">📷</span>
+            <div class="label">Photography</div>
+            <div class="concepts">Ratios · depth of field</div>
+          </div>
+          <div class="passion-option" onclick="selectPassion('music', this)">
+            <span class="emoji">🎵</span>
+            <div class="label">Music</div>
+            <div class="concepts">Fractions · frequency</div>
+          </div>
+          <div class="passion-option" onclick="selectPassion('cooking', this)">
+            <span class="emoji">🍳</span>
+            <div class="label">Cooking / Baking</div>
+            <div class="concepts">Ratios · measurement</div>
+          </div>
+          <div class="passion-option" onclick="selectPassion('custom', this)">
+            <span class="emoji">✨</span>
+            <div class="label">Something else</div>
+            <div class="concepts">Describe in your work</div>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="goStep(3)" style="flex:1">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Work -->
+    <div id="form-step-3" style="display:none">
+      <div class="tips">
+        <h3>💡 Tips for a great submission</h3>
+        <ul>
+          <li>Describe <strong>what you made</strong> and <strong>how you made it</strong> — not just the final answer</li>
+          <li>Mention any problems you ran into and how you solved them</li>
+          <li>Upload a photo, video, diagram, or document if you have one</li>
+          <li>In your reflection, tell us what you were thinking as you worked</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Describe your work</div>
+
+        <div class="form-group">
+          <label>What did you create, build, or investigate?</label>
+          <textarea id="artifact_description" rows="5"
+            placeholder="Describe your project in detail. What was the goal? What steps did you take? What math did you use? What did you discover or produce?"></textarea>
+          <div class="hint">Be specific — your teacher will use this to give you detailed feedback.</div>
+        </div>
+
+        <div class="form-group">
+          <label>Upload your work (optional)</label>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+            <div class="upload-icon">📎</div>
+            <p><strong>Click to upload</strong> or drag and drop</p>
+            <p>Photo, video, PDF, diagram, sketch — any file up to 100MB</p>
+            <div id="file-display"></div>
+          </div>
+          <input type="file" id="file-input" style="display:none"
+            accept="image/*,video/*,.pdf,.doc,.docx"
+            onchange="handleFile(this)">
+        </div>
+
+        <div class="form-group">
+          <label>Your reflection <span style="font-weight:400;color:var(--muted)">(optional but encouraged)</span></label>
+          <textarea id="student_reflection" rows="4"
+            placeholder="What were you thinking as you worked? What was hard? What are you proud of? What would you do differently? What questions do you still have?"></textarea>
+          <div class="hint">Reflections help your teacher see how you think, not just what you produced.</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-primary" id="submit-btn" onclick="submitWork()" style="flex:1">
+          Submit my work
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Success Panel ── -->
+  <div id="panel-success" class="panel">
+    <div class="success-card">
+      <div class="success-icon">✓</div>
+      <h2>Submitted!</h2>
+      <p>Your work has been sent to your teacher. They'll review it and send you feedback soon.</p>
+
+      <div class="tracking-id">
+        <span id="tracking-id-text" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px"></span>
+        <button class="copy-btn" onclick="copyId()">Copy</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:20px">
+        Save this ID to check your feedback status later.
+      </p>
+
+      <button class="btn btn-primary" onclick="resetForm()" style="margin-bottom:12px">
+        Submit another piece of work
+      </button>
+
+      <div class="status-check">
+        <h3>Check another submission</h3>
+        <div class="status-input-row">
+          <input type="text" id="check-id" placeholder="Paste your submission ID…">
+          <button class="btn btn-secondary" onclick="checkStatus()">Check</button>
+        </div>
+        <div id="status-result" class="status-result"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = window.location.hostname === 'localhost'
+  ? 'http://localhost:8000'
+  : '/api';
+
+let currentStep = 1;
+let selectedFile = null;
+let submittedId = null;
+
+// ── Step navigation ──
+function goStep(n) {
+  if (!validateStep(currentStep)) return;
+
+  document.getElementById(`form-step-${currentStep}`).style.display = 'none';
+  document.getElementById(`step-${currentStep}`).className = 'step done';
+
+  currentStep = n;
+  document.getElementById(`form-step-${n}`).style.display = 'block';
+  document.getElementById(`step-${n}`).className = 'step active';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function validateStep(n) {
+  const alert = document.getElementById('submit-alert');
+  alert.style.display = 'none';
+
+  if (n === 1) {
+    if (!v('student_name').trim()) { showError('Please enter your name.'); return false; }
+    if (!v('grade_level')) { showError('Please select your grade.'); return false; }
+    if (!v('subject').trim()) { showError('Please enter your subject.'); return false; }
+  }
+  if (n === 2) {
+    if (!v('student_passion')) { showError('Please choose a passion area.'); return false; }
+  }
+  if (n === 3) {
+    if (!v('artifact_description').trim()) { showError('Please describe your work.'); return false; }
+  }
+  return true;
+}
+
+function v(id) { return document.getElementById(id).value; }
+
+function showError(msg) {
+  const el = document.getElementById('submit-alert');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Passion selection ──
+function selectPassion(value, el) {
+  document.querySelectorAll('.passion-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('student_passion').value = value;
+}
+
+// ── File handling ──
+function handleFile(input) {
+  if (!input.files.length) return;
+  selectedFile = input.files[0];
+  const size = (selectedFile.size / (1024 * 1024)).toFixed(1);
+  const icon = selectedFile.type.startsWith('video/') ? '🎬' :
+               selectedFile.type.startsWith('image/') ? '🖼️' : '📄';
+  document.getElementById('file-display').innerHTML =
+    `<div class="file-pill">${icon} ${selectedFile.name} (${size} MB)</div>`;
+}
+
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('dragover');
+  const fi = document.getElementById('file-input');
+  if (e.dataTransfer.files.length) {
+    // Programmatically set files (read-only, so we store directly)
+    selectedFile = e.dataTransfer.files[0];
+    const size = (selectedFile.size / (1024 * 1024)).toFixed(1);
+    const icon = selectedFile.type.startsWith('video/') ? '🎬' :
+                 selectedFile.type.startsWith('image/') ? '🖼️' : '📄';
+    document.getElementById('file-display').innerHTML =
+      `<div class="file-pill">${icon} ${selectedFile.name} (${size} MB)</div>`;
+  }
+});
+
+// ── Submit ──
+async function submitWork() {
+  if (!validateStep(3)) return;
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Submitting…';
+
+  const fd = new FormData();
+  fd.append('student_name', v('student_name'));
+  fd.append('grade_level', v('grade_level'));
+  fd.append('subject', v('subject'));
+  fd.append('student_passion', v('student_passion'));
+  fd.append('artifact_description', v('artifact_description'));
+  fd.append('student_reflection', v('student_reflection'));
+  if (selectedFile) fd.append('artifact_file', selectedFile);
+
+  try {
+    const res = await fetch(`${API}/student/submit`, { method: 'POST', body: fd });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Server error' }));
+      throw new Error(err.detail || 'Submission failed');
+    }
+    const data = await res.json();
+    submittedId = data.assessment_id;
+
+    // Show success
+    document.getElementById('panel-submit').classList.remove('active');
+    document.getElementById('panel-success').classList.add('active');
+    document.getElementById('tracking-id-text').textContent = submittedId;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  } catch (err) {
+    showError(err.message);
+    btn.disabled = false;
+    btn.innerHTML = 'Submit my work';
+  }
+}
+
+// ── Copy tracking ID ──
+function copyId() {
+  navigator.clipboard.writeText(submittedId || '').then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  });
+}
+
+// ── Status check ──
+async function checkStatus() {
+  const id = document.getElementById('check-id').value.trim();
+  const result = document.getElementById('status-result');
+  if (!id) return;
+
+  result.className = 'status-result';
+  result.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/student/status/${id}`);
+    if (!res.ok) throw new Error('Submission not found');
+    const data = await res.json();
+    result.style.display = 'block';
+    if (data.approved) {
+      result.className = 'status-result status-reviewed';
+      result.textContent = `✓ ${data.student_name}'s work has been reviewed by your teacher.`;
+    } else {
+      result.className = 'status-result status-pending';
+      result.textContent = `⏳ ${data.student_name}'s submission is still being reviewed. Check back soon.`;
+    }
+  } catch {
+    result.style.display = 'block';
+    result.className = 'status-result status-error';
+    result.textContent = 'Submission ID not found. Check the ID and try again.';
+  }
+}
+
+// ── Reset for another submission ──
+function resetForm() {
+  document.getElementById('panel-success').classList.remove('active');
+  document.getElementById('panel-submit').classList.add('active');
+
+  // Reset steps
+  currentStep = 1;
+  document.getElementById('form-step-1').style.display = 'block';
+  document.getElementById('form-step-2').style.display = 'none';
+  document.getElementById('form-step-3').style.display = 'none';
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.className = i === 0 ? 'step active' : 'step';
+  });
+
+  // Clear fields
+  ['student_name','grade_level','subject','student_passion','artifact_description','student_reflection'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.querySelectorAll('.passion-option').forEach(o => o.classList.remove('selected'));
+  document.getElementById('file-display').innerHTML = '';
+  selectedFile = null;
+  document.getElementById('submit-alert').style.display = 'none';
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('submit-btn').innerHTML = 'Submit my work';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

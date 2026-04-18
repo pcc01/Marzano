@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Marzano Assessment Tool</title>
+<title>Marzano Assessment — Teacher Dashboard</title>
 <style>
   :root {
     --bg: #f8f7f4;
     --surface: #ffffff;
-    --border: rgba(0,0,0,0.1);
+    --border: rgba(0,0,0,0.09);
     --text: #1a1a18;
     --muted: #6b6b65;
     --accent: #4a3fc0;
@@ -21,69 +21,105 @@
     --coral-light: #faece7;
     --green: #3b6d11;
     --green-light: #eaf3de;
+    --blue: #185fa5;
+    --blue-light: #e6f1fb;
     --radius: 10px;
     --radius-lg: 14px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+  body { font-family: system-ui,-apple-system,sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
 
-  /* Layout */
-  .app { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
-  .sidebar { background: var(--surface); border-right: 0.5px solid var(--border); padding: 0; overflow-y: auto; }
-  .main { padding: 24px; overflow-y: auto; }
+  /* App shell */
+  .app { display: grid; grid-template-columns: 264px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--surface); border-right: 0.5px solid var(--border); display: flex; flex-direction: column; }
+  .main { overflow-y: auto; }
 
   /* Sidebar */
-  .sidebar-header { padding: 20px 20px 16px; border-bottom: 0.5px solid var(--border); }
-  .sidebar-header h1 { font-size: 16px; font-weight: 600; color: var(--accent); margin-bottom: 2px; }
-  .sidebar-header p { font-size: 12px; color: var(--muted); }
-  .sidebar-section { padding: 12px 20px 8px; }
-  .sidebar-section h2 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
-  .nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--muted); transition: all 0.15s; }
-  .nav-item:hover { background: var(--bg); color: var(--text); }
-  .nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
-  .nav-icon { width: 16px; height: 16px; opacity: 0.7; }
-  
-  .assessment-list { padding: 0 12px 12px; }
-  .assessment-card-mini { padding: 10px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; border: 0.5px solid transparent; }
-  .assessment-card-mini:hover { background: var(--bg); border-color: var(--border); }
-  .assessment-card-mini.active { background: var(--accent-light); border-color: var(--accent); }
-  .assessment-card-mini .student { font-weight: 500; font-size: 13px; }
-  .assessment-card-mini .meta { font-size: 11px; color: var(--muted); display: flex; gap: 6px; align-items: center; margin-top: 2px; }
-  .badge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+  .sidebar-header { padding: 18px 18px 14px; border-bottom: 0.5px solid var(--border); }
+  .sidebar-header h1 { font-size: 15px; font-weight: 700; color: var(--accent); }
+  .sidebar-header p { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .nav-section { padding: 10px 12px 6px; }
+  .nav-section h2 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); padding: 0 6px; margin-bottom: 4px; }
+  .nav-btn {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 7px 8px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; color: var(--muted); background: none; border: none;
+    font-family: inherit; transition: all 0.12s; text-align: left;
+  }
+  .nav-btn:hover { background: var(--bg); color: var(--text); }
+  .nav-btn.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  .nav-btn svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+  .nav-badge {
+    margin-left: auto; background: var(--coral); color: white;
+    font-size: 10px; font-weight: 700; border-radius: 10px;
+    padding: 1px 6px; min-width: 18px; text-align: center;
+  }
+  .nav-badge.green { background: var(--teal); }
+
+  .recent-list { padding: 0 10px 10px; flex: 1; overflow-y: auto; }
+  .recent-item {
+    padding: 8px 8px; border-radius: 8px; cursor: pointer;
+    margin-bottom: 2px; border: 0.5px solid transparent; transition: all 0.12s;
+  }
+  .recent-item:hover { background: var(--bg); border-color: var(--border); }
+  .recent-item.active { background: var(--accent-light); border-color: var(--accent); }
+  .recent-name { font-weight: 600; font-size: 12px; }
+  .recent-meta { font-size: 10px; color: var(--muted); display: flex; gap: 5px; align-items: center; margin-top: 1px; }
+
+  /* Student portal link at sidebar bottom */
+  .sidebar-footer { padding: 12px; border-top: 0.5px solid var(--border); margin-top: auto; }
+  .portal-link {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border-radius: 8px; background: var(--teal-light); color: var(--teal);
+    text-decoration: none; font-size: 12px; font-weight: 600;
+  }
+  .portal-link:hover { opacity: 0.85; }
+
+  /* Main panels */
+  .main-inner { padding: 24px; max-width: 900px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .page-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+  .page-hdr h2 { font-size: 19px; font-weight: 700; }
+  .page-hdr p { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  /* Badges */
+  .badge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
   .badge-approved { background: var(--green-light); color: var(--green); }
   .badge-draft { background: var(--amber-light); color: var(--amber); }
   .badge-level { background: var(--teal-light); color: var(--teal); }
-
-  /* Main panels */
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .page-header { margin-bottom: 24px; }
-  .page-header h2 { font-size: 20px; font-weight: 600; }
-  .page-header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .badge-student { background: var(--blue-light); color: var(--blue); }
+  .badge-video { background: var(--coral-light); color: var(--coral); }
+  .badge-error { background: var(--coral-light); color: var(--coral); }
+  .badge-processing { background: var(--amber-light); color: var(--amber); }
+  .badge-complete { background: var(--green-light); color: var(--green); }
+  .badge-pending { background: #f1efe8; color: #5f5e5a; }
 
   /* Cards */
-  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
-  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 14px; }
+  .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 12px; }
 
   /* Form */
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .form-group { margin-bottom: 16px; }
-  .form-group label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 5px; }
   .form-group input, .form-group select, .form-group textarea {
     width: 100%; padding: 8px 12px; border: 0.5px solid var(--border);
-    border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--surface);
-    color: var(--text); transition: border-color 0.15s; outline: none;
+    border-radius: 8px; font-size: 13px; font-family: inherit;
+    background: var(--surface); color: var(--text); outline: none; transition: border-color 0.12s;
   }
   .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
-  .form-group textarea { resize: vertical; min-height: 80px; }
-  .upload-area { border: 1.5px dashed var(--border); border-radius: 10px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--bg); }
-  .upload-area:hover { border-color: var(--accent); background: var(--accent-light); }
-  .upload-area p { color: var(--muted); font-size: 13px; }
-  .upload-area strong { color: var(--accent); }
-  #file-preview { margin-top: 8px; font-size: 12px; color: var(--teal); }
+  .form-group textarea { resize: vertical; min-height: 70px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .upload-zone {
+    border: 1.5px dashed var(--border); border-radius: 10px; padding: 20px;
+    text-align: center; cursor: pointer; transition: all 0.12s; background: var(--bg);
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-light); }
+  .upload-zone p { color: var(--muted); font-size: 12px; }
+  #file-preview { font-size: 11px; color: var(--teal); margin-top: 6px; }
 
   /* Buttons */
-  .btn { padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border); transition: all 0.15s; font-family: inherit; }
+  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 0.5px solid var(--border); transition: all 0.12s; font-family: inherit; }
   .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
   .btn-primary:hover { opacity: 0.9; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -91,78 +127,125 @@
   .btn-secondary:hover { background: var(--bg); }
   .btn-success { background: var(--teal); color: white; border-color: var(--teal); }
   .btn-success:hover { opacity: 0.9; }
-  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+  .btn-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 
-  /* Marzano Levels display */
-  .taxonomy-breakdown { display: flex; flex-direction: column; gap: 12px; }
-  .taxonomy-item { border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .taxonomy-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .taxonomy-system { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-  .taxonomy-level { font-weight: 600; font-size: 14px; }
-  .taxonomy-sublevel { font-size: 12px; color: var(--muted); }
-  .taxonomy-evidence { padding: 10px 16px 14px; background: var(--bg); font-size: 13px; color: var(--muted); border-top: 0.5px solid var(--border); }
-  .taxonomy-evidence strong { color: var(--text); display: block; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  /* Assessment grid */
+  .assess-grid { display: flex; flex-direction: column; gap: 10px; }
+  .assess-row {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color 0.12s;
+  }
+  .assess-row:hover { border-color: var(--accent); }
+  .assess-row .ar-main { flex: 1; min-width: 0; }
+  .assess-row .ar-name { font-weight: 700; font-size: 14px; }
+  .assess-row .ar-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .assess-row .ar-badges { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
 
-  .rating-pill { padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .rating-advanced { background: var(--green-light); color: var(--green); }
-  .rating-proficient { background: var(--teal-light); color: var(--teal); }
-  .rating-developing { background: var(--amber-light); color: var(--amber); }
-  .rating-emerging { background: var(--coral-light); color: var(--coral); }
-  .rating-not { background: #f1efe8; color: #888780; }
+  /* Review layout */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .summary-box { padding: 14px; background: var(--bg); border-radius: 10px; border: 0.5px solid var(--border); }
+  .summary-box h4 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
+  .summary-box p { font-size: 13px; }
+  .taxonomy-item { border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+  .taxonomy-hdr { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .tx-sys { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .tx-lvl { font-weight: 700; font-size: 13px; }
+  .tx-sub { font-size: 11px; color: var(--muted); }
+  .taxonomy-body { padding: 9px 14px 12px; background: var(--bg); border-top: 0.5px solid var(--border); font-size: 12px; color: var(--muted); }
+  .taxonomy-body strong { color: var(--text); display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+  .sys-self { background: var(--accent-light); border-left: 3px solid var(--accent); }
+  .sys-meta { background: var(--teal-light); border-left: 3px solid var(--teal); }
+  .sys-cog  { background: var(--amber-light); border-left: 3px solid var(--amber); }
+  .rating-pill { padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+  .r-advanced  { background: var(--green-light);  color: var(--green); }
+  .r-proficient{ background: var(--teal-light);   color: var(--teal); }
+  .r-developing{ background: var(--amber-light);  color: var(--amber); }
+  .r-emerging  { background: var(--coral-light);  color: var(--coral); }
+  .r-not       { background: #f1efe8; color: #888780; }
+  .reasoning { background: var(--bg); border: 0.5px solid var(--border); border-radius: 8px; padding: 12px; font-size: 12px; color: var(--muted); line-height: 1.7; font-style: italic; }
+  .teacher-section { background: var(--accent-light); border: 1px solid rgba(74,63,192,0.2); border-radius: 12px; padding: 16px; margin-top: 14px; }
+  .teacher-section h3 { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
 
-  /* System colors */
-  .system-self { background: var(--accent-light); border-left: 3px solid var(--accent); }
-  .system-meta { background: var(--teal-light); border-left: 3px solid var(--teal); }
-  .system-cognitive { background: var(--amber-light); border-left: 3px solid var(--amber); }
+  /* Ingestion panel */
+  .ingest-drop {
+    border: 2px dashed var(--border); border-radius: 12px; padding: 32px;
+    text-align: center; cursor: pointer; background: var(--bg); transition: all 0.15s;
+  }
+  .ingest-drop:hover, .ingest-drop.dragover { border-color: var(--accent); background: var(--accent-light); }
+  .ingest-drop .di { font-size: 32px; margin-bottom: 8px; }
+  .ingest-drop p { color: var(--muted); font-size: 13px; }
+  .job-row { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .job-row .jr-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .job-filename { font-weight: 600; font-size: 13px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
 
-  /* Summary boxes */
-  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-  .summary-box { padding: 16px; background: var(--bg); border-radius: 10px; border: 0.5px solid var(--border); }
-  .summary-box h4 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 8px; }
-  .summary-box p { font-size: 13px; line-height: 1.6; }
+  /* Notification toasts */
+  #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+  .toast {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 12px 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    display: flex; gap: 10px; align-items: flex-start;
+    animation: slideIn 0.2s ease; transition: opacity 0.3s;
+  }
+  .toast.hiding { opacity: 0; }
+  @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .toast-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .toast-body { flex: 1; min-width: 0; }
+  .toast-title { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+  .toast-msg { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .toast-close { font-size: 16px; color: var(--muted); cursor: pointer; flex-shrink: 0; line-height: 1; padding: 2px; }
+  .toast-close:hover { color: var(--text); }
+  .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent); border-radius: 0 0 0 12px; transition: width 0.3s; }
+  .toast { position: relative; overflow: hidden; }
 
-  /* Teacher edit area */
-  .teacher-section { background: var(--accent-light); border: 1px solid rgba(74, 63, 192, 0.2); border-radius: 12px; padding: 18px; margin-top: 16px; }
-  .teacher-section h3 { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  /* Notification history panel */
+  .notif-row { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; gap: 10px; }
+  .notif-row.unread { border-left: 3px solid var(--accent); }
+  .notif-icon { font-size: 18px; flex-shrink: 0; }
+  .notif-title { font-weight: 600; font-size: 13px; }
+  .notif-body { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .notif-time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  #notif-dot { display: none; width: 7px; height: 7px; background: var(--coral); border-radius: 50%; margin-left: auto; flex-shrink: 0; }
 
-  /* Reasoning panel */
-  .reasoning { background: #f8f7f4; border: 0.5px solid var(--border); border-radius: 8px; padding: 14px; font-size: 12px; color: var(--muted); line-height: 1.7; font-style: italic; }
-
-  /* Loading */
-  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  /* SSE status bar */
+  .sse-bar { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); padding: 8px 12px; border-top: 0.5px solid var(--border); }
+  .sse-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+  .sse-dot.connected { background: var(--teal); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
   /* Taxonomy reference */
-  .tax-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .tax-ref-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  .tax-ref-header { padding: 12px 16px; font-weight: 600; font-size: 13px; }
-  .tax-ref-header.self { background: var(--accent-light); color: var(--accent); }
-  .tax-ref-header.meta { background: var(--teal-light); color: var(--teal); }
-  .tax-ref-header.retrieval { background: #f1efe8; color: #5f5e5a; }
-  .tax-ref-header.comprehension { background: var(--amber-light); color: var(--amber); }
-  .tax-ref-header.analysis { background: var(--coral-light); color: var(--coral); }
-  .tax-ref-header.utilization { background: var(--green-light); color: var(--green); }
-  .tax-ref-sublevel { padding: 8px 16px; border-top: 0.5px solid var(--border); }
-  .tax-ref-sublevel h4 { font-weight: 600; font-size: 12px; margin-bottom: 4px; }
-  .tax-ref-sublevel .verbs { font-size: 11px; color: var(--muted); }
+  .tax-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .tax-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .tax-hdr { padding: 10px 14px; font-weight: 700; font-size: 12px; }
+  .th-self { background: var(--accent-light); color: var(--accent); }
+  .th-meta { background: var(--teal-light); color: var(--teal); }
+  .th-ret  { background: #f1efe8; color: #5f5e5a; }
+  .th-comp { background: var(--amber-light); color: var(--amber); }
+  .th-anal { background: var(--coral-light); color: var(--coral); }
+  .th-util { background: var(--green-light); color: var(--green); }
+  .tax-sub { padding: 7px 14px; border-top: 0.5px solid var(--border); }
+  .tax-sub h4 { font-weight: 700; font-size: 11px; margin-bottom: 2px; }
+  .tax-sub .verbs { font-size: 10px; color: var(--muted); }
 
-  .alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
-  .alert-error { background: var(--coral-light); color: var(--coral); border: 0.5px solid rgba(153,60,29,0.2); }
-  .alert-success { background: var(--green-light); color: var(--green); border: 0.5px solid rgba(59,109,17,0.2); }
-  
-  .empty-state { text-align: center; padding: 60px 24px; color: var(--muted); }
-  .empty-state h3 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
-  
-  @media (max-width: 768px) {
-    .app { grid-template-columns: 1fr; }
-    .sidebar { display: none; }
-    .form-grid { grid-template-columns: 1fr; }
-    .summary-grid { grid-template-columns: 1fr; }
-    .tax-ref-grid { grid-template-columns: 1fr; }
-  }
+  /* Alerts */
+  .alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
+  .alert-error   { background: var(--coral-light); color: var(--coral); }
+  .alert-success { background: var(--green-light); color: var(--green); }
+
+  .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+  .empty h3 { font-size: 15px; color: var(--text); margin-bottom: 6px; }
+
+  /* Spinner */
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin360 0.7s linear infinite; vertical-align: middle; margin-right: 4px; }
+  @keyframes spin360 { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
+
+<div id="toast-container"></div>
 
 <div class="app">
 
@@ -170,246 +253,375 @@
   <nav class="sidebar">
     <div class="sidebar-header">
       <h1>Marzano AI</h1>
-      <p>Personalized Assessment Tool</p>
+      <p>Teacher Assessment Dashboard</p>
     </div>
 
-    <div class="sidebar-section">
-      <h2>Tools</h2>
-      <div class="nav-item active" onclick="showPanel('submit')">
-        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 2v16M2 10h16" stroke-linecap="round"/></svg>
+    <div class="nav-section">
+      <h2>Assessment</h2>
+      <button class="nav-btn active" id="nav-submit" onclick="nav('submit')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M2 8h12" stroke-linecap="round"/></svg>
         New Assessment
-      </div>
-      <div class="nav-item" onclick="showPanel('list'); loadList()">
-        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h14M3 10h14M3 15h8" stroke-linecap="round"/></svg>
+      </button>
+      <button class="nav-btn" id="nav-list" onclick="nav('list'); loadList()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h7" stroke-linecap="round"/></svg>
         All Assessments
-      </div>
-      <div class="nav-item" onclick="showPanel('taxonomy')">
-        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h12v3H4zM4 10h8v3H4zM4 16h5v-2H4z" stroke-linecap="round"/></svg>
-        Taxonomy Reference
-      </div>
+      </button>
     </div>
 
-    <div class="sidebar-section">
-      <h2>Recent Assessments</h2>
+    <div class="nav-section">
+      <h2>Knowledge Base</h2>
+      <button class="nav-btn" id="nav-ingest" onclick="nav('ingest'); loadJobs()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h10M8 2v8M5 7l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Index Documents
+        <span id="rag-badge" class="nav-badge green" style="display:none">●</span>
+      </button>
     </div>
-    <div class="assessment-list" id="sidebar-list"></div>
+
+    <div class="nav-section">
+      <h2>Reference</h2>
+      <button class="nav-btn" id="nav-notifications" onclick="nav('notifications'); loadNotifications()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a4 4 0 0 1 4 4v3l1 2H3l1-2V6a4 4 0 0 1 4-4zM6.5 13a1.5 1.5 0 0 0 3 0" stroke-linecap="round"/></svg>
+        Notifications
+        <span id="notif-badge" class="nav-badge" style="display:none">0</span>
+      </button>
+      <button class="nav-btn" id="nav-taxonomy" onclick="nav('taxonomy'); loadTaxRef()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h5v4H2zM9 3h5v4H9zM2 11h12" stroke-linecap="round"/></svg>
+        Taxonomy Reference
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <h2>Recent</h2>
+    </div>
+    <div class="recent-list" id="recent-list"></div>
+
+    <div class="sidebar-footer">
+      <a href="/student/" class="portal-link">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM2 14a6 6 0 0 1 12 0" stroke-linecap="round"/></svg>
+        Student Portal
+      </a>
+    </div>
+
+    <div class="sse-bar">
+      <div class="sse-dot" id="sse-dot"></div>
+      <span id="sse-label">Connecting…</span>
+    </div>
   </nav>
 
   <!-- ── Main ── -->
   <main class="main">
+  <div class="main-inner">
 
-    <!-- Submit Panel -->
+    <!-- New Assessment -->
     <div id="panel-submit" class="panel active">
-      <div class="page-header">
-        <h2>New Student Assessment</h2>
-        <p>Submit a student artifact for Marzano-aligned AI feedback. The teacher reviews and approves the draft.</p>
-      </div>
-
+      <div class="page-hdr"><div><h2>New Assessment</h2><p>Submit student work — text, image, PDF, or video.</p></div></div>
       <div id="submit-alert" class="alert" style="display:none"></div>
 
-      <form id="assessment-form" onsubmit="submitAssessment(event)">
+      <form id="assess-form" onsubmit="submitAssessment(event)">
         <div class="card">
-          <div class="card-title">Student Information</div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Student Name</label>
-              <input type="text" name="student_name" placeholder="e.g. Alex Chen" required>
-            </div>
-            <div class="form-group">
-              <label>Grade Level</label>
+          <div class="card-title">Student</div>
+          <div class="form-row">
+            <div class="form-group"><label>Name</label><input name="student_name" placeholder="Full name" required></div>
+            <div class="form-group"><label>Grade</label>
               <select name="grade_level" required>
-                <option value="">Select grade…</option>
+                <option value="">Select…</option>
                 <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
-                <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option>
-                <option>Grade 12</option>
+                <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
               </select>
             </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Subject</label><input name="subject" placeholder="e.g. Grade 10 Mathematics — Geometry" required></div>
             <div class="form-group">
-              <label>Subject / Core Requirement</label>
-              <input type="text" name="subject" placeholder="e.g. Mathematics — Geometry" required>
-            </div>
-            <div class="form-group">
-              <label>Student Passion / Context</label>
-              <select name="student_passion" required onchange="updatePassionHint(this)">
-                <option value="">Select passion…</option>
+              <label>Passion / Context</label>
+              <select name="student_passion" required onchange="updateHint(this)">
+                <option value="">Select…</option>
                 <option value="architecture">Architecture</option>
                 <option value="astronomy">Astronomy</option>
-                <option value="barrel_making">Barrel Making / Cooperage</option>
+                <option value="barrel_making">Barrel Making / Craft</option>
                 <option value="photography">Photography</option>
                 <option value="music">Music</option>
                 <option value="cooking">Cooking / Baking</option>
-                <option value="custom">Other (describe in artifact)</option>
+                <option value="custom">Other</option>
               </select>
-              <div id="passion-hint" style="font-size:11px;color:var(--muted);margin-top:6px;"></div>
+              <div id="passion-hint" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title">Student Artifact</div>
-
+          <div class="card-title">Artifact</div>
           <div class="form-group">
-            <label>Upload File (optional — image, PDF, schematic)</label>
-            <div class="upload-area" onclick="document.getElementById('file-input').click()">
-              <p>📎 <strong>Click to upload</strong> or drag and drop</p>
-              <p style="margin-top:4px">Images (JPG, PNG, GIF), PDF, or any document</p>
+            <label>Upload file (optional)</label>
+            <div class="upload-zone" id="az" onclick="document.getElementById('af').click()">
+              <p>📎 <strong>Click or drag</strong> — image, video, PDF, schematic</p>
               <div id="file-preview"></div>
             </div>
-            <input type="file" id="file-input" name="artifact_file" style="display:none" accept="image/*,.pdf,.doc,.docx,.txt" onchange="previewFile(this)">
+            <input type="file" id="af" name="artifact_file" style="display:none"
+              accept="image/*,video/*,.pdf,.doc,.docx,.txt" onchange="previewFile(this)">
           </div>
-
-          <div class="form-group">
-            <label>Artifact Description</label>
-            <textarea name="artifact_description" placeholder="Describe what the student created or did. Include key mathematical concepts, methods, and findings. Be specific — the AI will cite this directly in its feedback." rows="5" required></textarea>
+          <div class="form-group"><label>Artifact Description</label>
+            <textarea name="artifact_description" rows="4" placeholder="Describe what the student created. Be specific — the AI cites this directly in feedback." required></textarea>
           </div>
-
-          <div class="form-group">
-            <label>Student Reflection / Notes (optional)</label>
-            <textarea name="student_reflection" placeholder="Paste the student's own reflection, journal entry, or notes here. Evidence of metacognition often lives here." rows="3"></textarea>
+          <div class="form-group"><label>Student Reflection (optional)</label>
+            <textarea name="student_reflection" rows="3" placeholder="Paste student's own reflection notes — key source of metacognitive evidence."></textarea>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary" id="submit-btn">
-          Generate Marzano Assessment
-        </button>
+        <button type="submit" class="btn btn-primary" id="submit-btn">Generate Marzano Assessment</button>
       </form>
     </div>
 
-    <!-- List Panel -->
+    <!-- Assessment List -->
     <div id="panel-list" class="panel">
-      <div class="page-header">
-        <h2>All Assessments</h2>
-        <p>Click any assessment to review and edit the AI feedback.</p>
-      </div>
-      <div id="assessment-list-main"></div>
+      <div class="page-hdr"><div><h2>All Assessments</h2><p>Click any row to review and edit.</p></div></div>
+      <div id="list-content"></div>
     </div>
 
-    <!-- Review Panel -->
+    <!-- Review -->
     <div id="panel-review" class="panel">
-      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
-          <h2 id="review-title">Assessment Review</h2>
-          <p id="review-meta" style="color:var(--muted);font-size:13px;margin-top:4px;"></p>
-        </div>
-        <button class="btn btn-secondary" onclick="showPanel('list'); loadList()">← Back</button>
+      <div class="page-hdr" style="align-items:center">
+        <div><h2 id="rv-title">Review</h2><p id="rv-meta" style="color:var(--muted);font-size:12px;margin-top:2px"></p></div>
+        <button class="btn btn-secondary" onclick="nav('list');loadList()" style="flex-shrink:0">← Back</button>
       </div>
-
       <div id="review-alert" class="alert" style="display:none"></div>
 
-      <!-- Overall -->
       <div class="card">
         <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
-          <span>Overall Assessment</span>
-          <span id="review-overall-badge" class="badge badge-level"></span>
+          Overall <span id="rv-badge" class="badge badge-level"></span>
         </div>
         <div class="summary-grid">
-          <div class="summary-box">
-            <h4>Strengths</h4>
-            <p id="review-strengths"></p>
-          </div>
-          <div class="summary-box">
-            <h4>Growth Areas</h4>
-            <p id="review-growth"></p>
-          </div>
+          <div class="summary-box"><h4>Strengths</h4><p id="rv-strengths"></p></div>
+          <div class="summary-box"><h4>Growth Areas</h4><p id="rv-growth"></p></div>
         </div>
-        <div class="summary-box" style="margin-bottom:12px">
-          <h4>Next Level Challenge</h4>
-          <p id="review-next"></p>
-        </div>
-        <div class="summary-box">
-          <h4>Passion Integration</h4>
-          <p id="review-passion"></p>
-        </div>
+        <div class="summary-box" style="margin-bottom:10px"><h4>Next Level Challenge</h4><p id="rv-next"></p></div>
+        <div class="summary-box"><h4>Passion Integration</h4><p id="rv-passion"></p></div>
       </div>
 
-      <!-- Taxonomy Breakdown -->
       <div class="card">
         <div class="card-title">Marzano Taxonomy Breakdown</div>
-        <div class="taxonomy-breakdown" id="review-breakdown"></div>
+        <div id="rv-breakdown"></div>
       </div>
 
-      <!-- AI Reasoning (transparency) -->
       <div class="card">
-        <div class="card-title">AI Reasoning (Teacher Transparency)</div>
-        <div class="reasoning" id="review-reasoning"></div>
+        <div class="card-title">AI Reasoning</div>
+        <div class="reasoning" id="rv-reasoning"></div>
       </div>
 
-      <!-- Teacher Edit Section -->
       <div class="teacher-section">
-        <h3>✏️ Teacher Review</h3>
-        <div class="form-group">
-          <label>Your Comments / Additions</label>
-          <textarea id="teacher-comments" rows="4" placeholder="Add your own observations, corrections, or student-specific context here…"></textarea>
+        <h3>✏ Teacher Review</h3>
+        <div class="form-group"><label>Your Comments</label>
+          <textarea id="tc-comments" rows="4" placeholder="Add your observations, corrections, or context…"></textarea>
         </div>
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Override Level (optional)</label>
-            <select id="teacher-level">
-              <option value="">Use AI assessment</option>
-              <option>Self System — Examining Importance</option>
-              <option>Self System — Examining Efficacy</option>
-              <option>Self System — Examining Emotional Response</option>
-              <option>Metacognitive — Goal Specification</option>
-              <option>Metacognitive — Process Monitoring</option>
-              <option>Cognitive: Retrieval — Recalling</option>
-              <option>Cognitive: Retrieval — Executing</option>
-              <option>Cognitive: Comprehension — Integrating</option>
-              <option>Cognitive: Comprehension — Symbolizing</option>
-              <option>Cognitive: Analysis — Matching</option>
-              <option>Cognitive: Analysis — Generalizing</option>
-              <option>Cognitive: Analysis — Specifying</option>
-              <option>Cognitive: Knowledge Utilization — Problem Solving</option>
-              <option>Cognitive: Knowledge Utilization — Experimenting</option>
-              <option>Cognitive: Knowledge Utilization — Investigating</option>
-            </select>
-          </div>
+        <div class="form-group"><label>Override Level (optional)</label>
+          <select id="tc-level">
+            <option value="">Use AI assessment</option>
+            <option>Self System — Examining Importance</option>
+            <option>Self System — Examining Efficacy</option>
+            <option>Self System — Examining Emotional Response</option>
+            <option>Metacognitive — Goal Specification</option>
+            <option>Metacognitive — Process Monitoring</option>
+            <option>Cognitive: Retrieval — Executing</option>
+            <option>Cognitive: Comprehension — Integrating</option>
+            <option>Cognitive: Comprehension — Symbolizing</option>
+            <option>Cognitive: Analysis — Matching</option>
+            <option>Cognitive: Analysis — Generalizing</option>
+            <option>Cognitive: Analysis — Specifying</option>
+            <option>Cognitive: Knowledge Utilization — Problem Solving</option>
+            <option>Cognitive: Knowledge Utilization — Experimenting</option>
+            <option>Cognitive: Knowledge Utilization — Investigating</option>
+          </select>
         </div>
         <div class="btn-row">
-          <button class="btn btn-secondary" onclick="saveDraft()">Save Draft</button>
-          <button class="btn btn-success" onclick="approveAndSave()">✓ Approve & Save</button>
+          <button class="btn btn-secondary" onclick="saveAssessment(false)">Save Draft</button>
+          <button class="btn btn-success" onclick="saveAssessment(true)">✓ Approve & Save</button>
         </div>
       </div>
     </div>
 
-    <!-- Taxonomy Reference Panel -->
-    <div id="panel-taxonomy" class="panel">
-      <div class="page-header">
-        <h2>Marzano Taxonomy Reference</h2>
-        <p>The three systems and four cognitive levels used to generate all feedback.</p>
+    <!-- Ingest Panel -->
+    <div id="panel-ingest" class="panel">
+      <div class="page-hdr">
+        <div>
+          <h2>Index Documents</h2>
+          <p>Upload Marzano PDFs to the knowledge base. The AI will cite them in feedback.</p>
+        </div>
+        <div id="rag-status-badge" style="font-size:12px;color:var(--muted)">Loading…</div>
       </div>
-      <div class="tax-ref-grid" id="taxonomy-ref-content"></div>
+
+      <div class="card">
+        <div class="card-title">Upload a document</div>
+        <div class="ingest-drop" id="ingest-drop" onclick="document.getElementById('ingest-file').click()">
+          <div class="di">📚</div>
+          <p><strong>Click or drag</strong> to upload a PDF or document</p>
+          <p style="margin-top:4px">Supports: PDF, DOCX, TXT — up to 200MB</p>
+          <div id="ingest-preview" style="margin-top:8px;font-size:12px;color:var(--teal)"></div>
+        </div>
+        <input type="file" id="ingest-file" style="display:none"
+          accept=".pdf,.docx,.txt" onchange="handleIngestFile(this)">
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn btn-primary" id="ingest-btn" onclick="startIngestion()" disabled>
+            Index Document
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Indexing Jobs</div>
+        <div id="jobs-list"><p style="color:var(--muted);font-size:13px">No jobs yet.</p></div>
+      </div>
     </div>
 
+    <!-- Notifications -->
+    <div id="panel-notifications" class="panel">
+      <div class="page-hdr">
+        <div><h2>Notifications</h2><p>System events and assessment activity.</p></div>
+        <button class="btn btn-secondary" onclick="markAllRead()">Mark all read</button>
+      </div>
+      <div id="notif-list"></div>
+    </div>
+
+    <!-- Taxonomy Reference -->
+    <div id="panel-taxonomy" class="panel">
+      <div class="page-hdr"><div><h2>Taxonomy Reference</h2><p>All levels and sublevels used in feedback.</p></div></div>
+      <div class="tax-grid" id="tax-ref"></div>
+    </div>
+
+  </div>
   </main>
 </div>
 
 <script>
-const API = window.location.hostname === 'localhost' 
-  ? 'http://localhost:8000' 
-  : '/api';
-
+const API = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api';
 let currentAssessmentId = null;
+let ingestFileData = null;
+let unreadCount = 0;
+let activeJobs = {};  // job_id → progress bar el
 
-// ─── Navigation ───
-function showPanel(name) {
+// ─── Nav ───
+function nav(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
+  const nb = document.getElementById('nav-' + name);
+  if (nb) nb.classList.add('active');
+}
+
+// ─── SSE connection ───
+function connectSSE() {
+  const dot = document.getElementById('sse-dot');
+  const label = document.getElementById('sse-label');
+
+  const es = new EventSource(`${API}/notifications/stream`);
+
+  es.addEventListener('connected', () => {
+    dot.className = 'sse-dot connected';
+    label.textContent = 'Live — receiving notifications';
+    checkRagStatus();
+  });
+
+  es.addEventListener('ingestion_started', e => {
+    const d = JSON.parse(e.data);
+    showToast('📄', 'Indexing started', d.body || d.title, 'info', 5000);
+    updateJobProgress(d.payload?.job_id, 0);
+  });
+
+  es.addEventListener('ingestion_progress', e => {
+    const d = JSON.parse(e.data);
+    const p = d.payload || {};
+    updateJobProgress(p.job_id, p.progress || 0, p.chunks_done, p.chunks_total);
+    // Update inline progress toast
+    showToast('⚙️', d.title, d.body, 'info', 3000);
+  });
+
+  es.addEventListener('ingestion_complete', e => {
+    const d = JSON.parse(e.data);
+    showToast('✅', d.title, d.body, 'success', 8000);
+    updateJobProgress(d.payload?.job_id, 100);
+    loadJobs();
+    checkRagStatus();
+    bumpUnread();
+  });
+
+  es.addEventListener('assessment_ready', e => {
+    const d = JSON.parse(e.data);
+    showToast('🎓', d.title, d.body, 'info', 8000);
+    loadSidebar();
+    bumpUnread();
+  });
+
+  es.addEventListener('assessment_approved', e => {
+    const d = JSON.parse(e.data);
+    showToast('✓', d.title, d.body, 'success', 6000);
+    bumpUnread();
+  });
+
+  es.addEventListener('error', e => {
+    const d = e.data ? JSON.parse(e.data) : {};
+    showToast('⚠️', d.title || 'Error', d.body || 'An error occurred.', 'error', 8000);
+    bumpUnread();
+  });
+
+  es.onerror = () => {
+    dot.className = 'sse-dot';
+    label.textContent = 'Reconnecting…';
+    setTimeout(connectSSE, 5000);
+    es.close();
+  };
+}
+
+// ─── Toasts ───
+const TOAST_ICONS = { success: '✅', info: '💬', error: '⚠️' };
+
+function showToast(icon, title, msg, type = 'info', duration = 5000) {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-body">
+      <div class="toast-title">${esc(title)}</div>
+      <div class="toast-msg">${esc(msg)}</div>
+    </div>
+    <div class="toast-close" onclick="removeToast(this.parentElement)">×</div>
+  `;
+  container.appendChild(el);
+
+  if (container.children.length > 5) container.firstChild.remove();
+
+  setTimeout(() => removeToast(el), duration);
+}
+
+function removeToast(el) {
+  if (!el || !el.parentElement) return;
+  el.classList.add('hiding');
+  setTimeout(() => el.remove(), 300);
+}
+
+// ─── Unread badge ───
+function bumpUnread() {
+  unreadCount++;
+  const badge = document.getElementById('notif-badge');
+  badge.style.display = 'flex';
+  badge.textContent = unreadCount;
+}
+
+function clearUnread() {
+  unreadCount = 0;
+  document.getElementById('notif-badge').style.display = 'none';
 }
 
 // ─── Passion hint ───
-const PASSION_HINTS = {
-  architecture: 'Math: geometry, ratios, area, structural load, trigonometry',
-  astronomy: 'Math: scientific notation, scale, gravity, orbital mechanics',
-  barrel_making: 'Math: volume, surface area, ratios, geometry',
-  photography: 'Math: ratios, fractions, depth-of-field geometry, light',
-  music: 'Math: fractions, ratios, frequency, wave patterns',
-  cooking: 'Math: ratios, fractions, scaling, measurement, chemistry',
+const HINTS = {
+  architecture: 'geometry · ratios · structural load · trig',
+  astronomy: 'scientific notation · scale · orbital mechanics',
+  barrel_making: 'volume · surface area · ratios',
+  photography: 'ratios · fractions · depth of field',
+  music: 'fractions · frequency · wave patterns',
+  cooking: 'ratios · scaling · measurement',
 };
-
-function updatePassionHint(sel) {
-  const h = document.getElementById('passion-hint');
-  h.textContent = PASSION_HINTS[sel.value] || '';
+function updateHint(sel) {
+  document.getElementById('passion-hint').textContent = HINTS[sel.value] || '';
 }
 
 // ─── File preview ───
@@ -417,11 +629,18 @@ function previewFile(input) {
   const el = document.getElementById('file-preview');
   if (input.files.length) {
     const f = input.files[0];
-    el.textContent = `✓ ${f.name} (${(f.size / 1024).toFixed(1)} KB)`;
-  } else {
-    el.textContent = '';
+    const isVideo = f.type.startsWith('video/');
+    el.textContent = `${isVideo ? '🎬' : '📎'} ${f.name} (${(f.size/1024).toFixed(0)} KB)`;
   }
 }
+const az = document.getElementById('az');
+az.addEventListener('dragover', e => { e.preventDefault(); az.classList.add('dragover'); });
+az.addEventListener('dragleave', () => az.classList.remove('dragover'));
+az.addEventListener('drop', e => {
+  e.preventDefault(); az.classList.remove('dragover');
+  const fi = document.getElementById('af');
+  if (e.dataTransfer.files.length) { fi.files = e.dataTransfer.files; previewFile(fi); }
+});
 
 // ─── Submit assessment ───
 async function submitAssessment(e) {
@@ -429,23 +648,18 @@ async function submitAssessment(e) {
   const btn = document.getElementById('submit-btn');
   const alert = document.getElementById('submit-alert');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Generating Marzano assessment…';
+  btn.innerHTML = '<span class="spin"></span>Generating assessment…';
   alert.style.display = 'none';
 
-  const form = document.getElementById('assessment-form');
-  const fd = new FormData(form);
-
   try {
+    const fd = new FormData(document.getElementById('assess-form'));
     const res = await fetch(`${API}/assess`, { method: 'POST', body: fd });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || 'Server error');
-    }
+    if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Server error'); }
     const data = await res.json();
-    loadReview(data.assessment_id);
-    showPanel('review');
-    loadSidebarList();
-  } catch (err) {
+    await loadReview(data.assessment_id);
+    nav('review');
+    loadSidebar();
+  } catch(err) {
     alert.className = 'alert alert-error';
     alert.textContent = '⚠ ' + err.message;
     alert.style.display = 'block';
@@ -457,129 +671,90 @@ async function submitAssessment(e) {
 
 // ─── Load assessment list ───
 async function loadList() {
-  const container = document.getElementById('assessment-list-main');
-  container.innerHTML = '<p style="color:var(--muted)">Loading…</p>';
+  const c = document.getElementById('list-content');
+  c.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading…</p>';
   try {
     const res = await fetch(`${API}/assessments`);
     const list = await res.json();
-    if (!list.length) {
-      container.innerHTML = '<div class="empty-state"><h3>No assessments yet</h3><p>Submit your first student artifact using New Assessment.</p></div>';
-      return;
-    }
-    container.innerHTML = list.map(a => `
-      <div class="card" style="cursor:pointer;transition:border-color 0.15s" 
-           onmouseover="this.style.borderColor='var(--accent)'"
-           onmouseout="this.style.borderColor='var(--border)'"
-           onclick="loadReview('${a.id}');showPanel('review')">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <div style="font-weight:600;font-size:15px">${a.student_name}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${a.subject} · ${a.grade_level} · ${a.passion}</div>
-          </div>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            <span class="badge badge-level">${a.overall_level}</span>
-            <span class="badge ${a.approved ? 'badge-approved' : 'badge-draft'}">${a.approved ? 'Approved' : 'Draft'}</span>
-          </div>
+    if (!list.length) { c.innerHTML = '<div class="empty"><h3>No assessments yet</h3><p>Submit your first artifact using New Assessment.</p></div>'; return; }
+    c.innerHTML = '<div class="assess-grid">' + list.map(a => `
+      <div class="assess-row" onclick="loadReview('${a.id}');nav('review')">
+        <div class="ar-main">
+          <div class="ar-name">${esc(a.student_name)}</div>
+          <div class="ar-meta">${esc(a.subject)} · ${esc(a.grade_level)} · ${esc(a.passion)} · ${fmtDate(a.created_at)}</div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px">${new Date(a.created_at).toLocaleDateString()}</div>
-      </div>
-    `).join('');
-  } catch {
-    container.innerHTML = '<div class="alert alert-error">Could not load assessments. Is the backend running?</div>';
-  }
+        <div class="ar-badges">
+          ${a.submitted_by === 'student' ? '<span class="badge badge-student">Student</span>' : ''}
+          ${a.has_video ? '<span class="badge badge-video">🎬 Video</span>' : ''}
+          <span class="badge badge-level">${esc(a.overall_level)}</span>
+          <span class="badge ${a.approved ? 'badge-approved' : 'badge-draft'}">${a.approved ? 'Approved' : 'Draft'}</span>
+        </div>
+      </div>`).join('') + '</div>';
+  } catch { c.innerHTML = '<div class="alert alert-error">Cannot connect to backend.</div>'; }
 }
 
-async function loadSidebarList() {
+// ─── Load sidebar recent list ───
+async function loadSidebar() {
   try {
     const res = await fetch(`${API}/assessments`);
     const list = await res.json();
-    const el = document.getElementById('sidebar-list');
-    el.innerHTML = list.slice(0, 8).map(a => `
-      <div class="assessment-card-mini" onclick="loadReview('${a.id}');showPanel('review')">
-        <div class="student">${a.student_name}</div>
-        <div class="meta">
-          <span>${a.grade_level}</span>
-          <span class="badge ${a.approved ? 'badge-approved' : 'badge-draft'}">${a.approved ? '✓' : 'Draft'}</span>
+    const el = document.getElementById('recent-list');
+    el.innerHTML = list.slice(0, 10).map(a => `
+      <div class="recent-item" onclick="loadReview('${a.id}');nav('review')">
+        <div class="recent-name">${esc(a.student_name)}</div>
+        <div class="recent-meta">
+          <span>${esc(a.grade_level)}</span>
+          ${a.submitted_by === 'student' ? '<span class="badge badge-student">S</span>' : ''}
+          <span class="badge ${a.approved ? 'badge-approved' : 'badge-draft'}" style="margin-left:auto">${a.approved ? '✓' : 'Draft'}</span>
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
   } catch {}
 }
 
-// ─── Load & display one assessment ───
+// ─── Load & render one assessment ───
 async function loadReview(id) {
   currentAssessmentId = id;
   const alert = document.getElementById('review-alert');
   alert.style.display = 'none';
-
   try {
     const res = await fetch(`${API}/assessments/${id}`);
     if (!res.ok) throw new Error('Not found');
     const d = await res.json();
-    const f = d.feedback;
+    const f = d.feedback || {};
 
-    document.getElementById('review-title').textContent = `${d.student_name} — ${d.subject}`;
-    document.getElementById('review-meta').textContent = `${d.grade_level} · ${d.student_passion} · ${new Date(d.created_at).toLocaleDateString()}`;
-    document.getElementById('review-overall-badge').textContent = `${f.overall_level} — ${f.overall_sublevel}`;
-    document.getElementById('review-strengths').textContent = f.strength_summary || '—';
-    document.getElementById('review-growth').textContent = f.growth_summary || '—';
-    document.getElementById('review-next').textContent = f.next_level_prompt || '—';
-    document.getElementById('review-passion').textContent = f.passion_integration || '—';
-    document.getElementById('review-reasoning').textContent = f.ai_reasoning || '—';
-    document.getElementById('teacher-comments').value = d.teacher_comments || '';
-    document.getElementById('teacher-level').value = d.teacher_edited_level || '';
+    document.getElementById('rv-title').textContent = `${d.student_name} — ${d.subject}`;
+    document.getElementById('rv-meta').textContent =
+      `${d.grade_level} · ${d.student_passion} · ${d.submitted_by === 'student' ? '👤 Student submission · ' : ''}${fmtDate(d.created_at)}${d.has_video ? ' · 🎬 Video' : ''}`;
+    document.getElementById('rv-badge').textContent = `${f.overall_level || '?'} — ${f.overall_sublevel || ''}`;
+    document.getElementById('rv-strengths').textContent = f.strength_summary || '—';
+    document.getElementById('rv-growth').textContent = f.growth_summary || '—';
+    document.getElementById('rv-next').textContent = f.next_level_prompt || '—';
+    document.getElementById('rv-passion').textContent = f.passion_integration || '—';
+    document.getElementById('rv-reasoning').textContent = f.ai_reasoning || '—';
+    document.getElementById('tc-comments').value = d.teacher_comments || '';
+    document.getElementById('tc-level').value = d.teacher_edited_level || '';
 
-    // Taxonomy breakdown
-    const breakdown = document.getElementById('review-breakdown');
-    if (f.taxonomy_breakdown && f.taxonomy_breakdown.length) {
-      breakdown.innerHTML = f.taxonomy_breakdown.map(item => `
-        <div class="taxonomy-item">
-          <div class="taxonomy-header ${systemClass(item.system)}">
-            <div>
-              <div class="taxonomy-system">${item.system}</div>
-              <div class="taxonomy-level">${item.level}</div>
-              <div class="taxonomy-sublevel">${item.sublevel}</div>
-            </div>
-            <span class="rating-pill ${ratingClass(item.rating)}">${item.rating}</span>
+    const bd = document.getElementById('rv-breakdown');
+    bd.innerHTML = (f.taxonomy_breakdown || []).map(item => `
+      <div class="taxonomy-item">
+        <div class="taxonomy-hdr ${sysClass(item.system)}">
+          <div>
+            <div class="tx-sys">${esc(item.system)}</div>
+            <div class="tx-lvl">${esc(item.level)}</div>
+            <div class="tx-sub">${esc(item.sublevel)}</div>
           </div>
-          <div class="taxonomy-evidence">
-            <strong>Evidence from student work</strong>
-            ${escHtml(item.evidence)}
-            ${item.teacher_note ? `<br><br><strong style="color:var(--accent)">Teacher note</strong>${escHtml(item.teacher_note)}` : ''}
-          </div>
+          <span class="rating-pill ${rClass(item.rating)}">${esc(item.rating)}</span>
         </div>
-      `).join('');
-    } else {
-      breakdown.innerHTML = '<p style="color:var(--muted)">No breakdown available.</p>';
-    }
-  } catch (err) {
+        <div class="taxonomy-body"><strong>Evidence</strong>${esc(item.evidence)}</div>
+      </div>`).join('') || '<p style="color:var(--muted);font-size:13px">No breakdown available.</p>';
+  } catch(err) {
     alert.className = 'alert alert-error';
-    alert.textContent = '⚠ Failed to load assessment: ' + err.message;
+    alert.textContent = '⚠ ' + err.message;
     alert.style.display = 'block';
   }
 }
 
-function systemClass(system) {
-  if (!system) return '';
-  const s = system.toLowerCase();
-  if (s.includes('self')) return 'system-self';
-  if (s.includes('meta')) return 'system-meta';
-  return 'system-cognitive';
-}
-
-function ratingClass(r) {
-  const m = { advanced: 'rating-advanced', proficient: 'rating-proficient', developing: 'rating-developing', emerging: 'rating-emerging' };
-  return m[(r || '').toLowerCase()] || 'rating-not';
-}
-
-function escHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ─── Teacher save / approve ───
-async function saveDraft() { await saveAssessment(false); }
-async function approveAndSave() { await saveAssessment(true); }
-
+// ─── Save teacher edits ───
 async function saveAssessment(approved) {
   const alert = document.getElementById('review-alert');
   if (!currentAssessmentId) return;
@@ -589,72 +764,213 @@ async function saveAssessment(approved) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         assessment_id: currentAssessmentId,
-        teacher_comments: document.getElementById('teacher-comments').value,
-        edited_level: document.getElementById('teacher-level').value || null,
+        teacher_comments: document.getElementById('tc-comments').value,
+        edited_level: document.getElementById('tc-level').value || null,
         approved,
       }),
     });
     if (!res.ok) throw new Error('Save failed');
     alert.className = 'alert alert-success';
-    alert.textContent = approved ? '✓ Assessment approved and saved.' : '✓ Draft saved.';
+    alert.textContent = approved ? '✓ Approved and saved.' : '✓ Draft saved.';
     alert.style.display = 'block';
-    loadSidebarList();
+    loadSidebar();
     setTimeout(() => { alert.style.display = 'none'; }, 3000);
-  } catch (err) {
+  } catch(err) {
     alert.className = 'alert alert-error';
     alert.textContent = '⚠ ' + err.message;
     alert.style.display = 'block';
   }
 }
 
-// ─── Taxonomy reference ───
-async function loadTaxonomyRef() {
-  const container = document.getElementById('taxonomy-ref-content');
+// ─── Ingestion ───
+let ingestBlob = null;
+function handleIngestFile(input) {
+  if (!input.files.length) return;
+  ingestBlob = input.files[0];
+  document.getElementById('ingest-preview').textContent =
+    `📄 ${ingestBlob.name} (${(ingestBlob.size/1024).toFixed(0)} KB)`;
+  document.getElementById('ingest-btn').disabled = false;
+}
+const id = document.getElementById('ingest-drop');
+id.addEventListener('dragover', e => { e.preventDefault(); id.classList.add('dragover'); });
+id.addEventListener('dragleave', () => id.classList.remove('dragover'));
+id.addEventListener('drop', e => {
+  e.preventDefault(); id.classList.remove('dragover');
+  const fi = document.getElementById('ingest-file');
+  if (e.dataTransfer.files.length) { fi.files = e.dataTransfer.files; handleIngestFile(fi); }
+});
+
+async function startIngestion() {
+  if (!ingestBlob) return;
+  const btn = document.getElementById('ingest-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Starting…';
+
+  const fd = new FormData();
+  fd.append('file', ingestBlob);
   try {
-    const res = await fetch(`${API}/taxonomy`);
-    const tax = await res.json();
-    const colorMap = { self_system: 'self', metacognitive: 'meta', retrieval: 'retrieval', comprehension: 'comprehension', analysis: 'analysis', knowledge_utilization: 'utilization' };
-    container.innerHTML = Object.entries(tax).map(([key, level]) => `
-      <div class="tax-ref-card">
-        <div class="tax-ref-header ${colorMap[key] || ''}">
-          ${level.name}
-          ${level.bloom_equivalent ? `<span style="font-weight:400;font-size:11px;margin-left:8px">≈ Bloom's: ${level.bloom_equivalent}</span>` : ''}
-        </div>
-        ${level.sublevels.map(s => `
-          <div class="tax-ref-sublevel">
-            <h4>${s.name}</h4>
-            <div class="verbs">${s.verbs.slice(0, 5).join(' · ')}</div>
-          </div>
-        `).join('')}
-      </div>
-    `).join('');
-  } catch {
-    container.innerHTML = '<div class="alert alert-error">Could not load taxonomy. Is the backend running?</div>';
+    const res = await fetch(`${API}/ingest`, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error('Upload failed');
+    const data = await res.json();
+    addJobRow(data.job_id, data.filename, 0);
+    btn.textContent = 'Index Document';
+    document.getElementById('ingest-preview').textContent = '';
+    ingestBlob = null;
+    document.getElementById('ingest-file').value = '';
+  } catch(err) {
+    showToast('⚠️', 'Upload failed', err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Index Document';
   }
 }
 
-// ─── Init ───
-loadSidebarList();
-document.getElementById('panel-taxonomy').addEventListener('click', () => {}, { once: false });
-document.querySelectorAll('.nav-item').forEach(el => {
-  el.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    el.classList.add('active');
-    if (el.onclick?.toString().includes('taxonomy')) loadTaxonomyRef();
-  });
-});
+function addJobRow(jobId, filename, progress) {
+  const c = document.getElementById('jobs-list');
+  if (c.querySelector('p')) c.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'job-row';
+  row.id = `job-${jobId}`;
+  row.innerHTML = `
+    <div class="jr-top">
+      <span class="job-filename">${esc(filename)}</span>
+      <span class="badge badge-processing" id="job-status-${jobId}">Processing</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="job-bar-${jobId}" style="width:${progress}%"></div></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:5px" id="job-msg-${jobId}">Starting…</div>`;
+  c.prepend(row);
+  activeJobs[jobId] = true;
+}
 
-// Drag-and-drop upload
-const uploadArea = document.querySelector('.upload-area');
-uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = 'var(--accent)'; });
-uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'var(--border)'; });
-uploadArea.addEventListener('drop', e => {
-  e.preventDefault();
-  uploadArea.style.borderColor = 'var(--border)';
-  const fi = document.getElementById('file-input');
-  fi.files = e.dataTransfer.files;
-  previewFile(fi);
-});
+function updateJobProgress(jobId, pct, done, total) {
+  if (!jobId) return;
+  const bar = document.getElementById(`job-bar-${jobId}`);
+  const msg = document.getElementById(`job-msg-${jobId}`);
+  const status = document.getElementById(`job-status-${jobId}`);
+  if (bar) bar.style.width = pct + '%';
+  if (msg && done !== undefined) msg.textContent = `${done}/${total} chunks`;
+  if (status && pct >= 100) {
+    status.textContent = 'Complete';
+    status.className = 'badge badge-complete';
+    delete activeJobs[jobId];
+  }
+}
+
+async function loadJobs() {
+  try {
+    const res = await fetch(`${API}/ingest/jobs`);
+    const jobs = await res.json();
+    const c = document.getElementById('jobs-list');
+    if (!jobs.length) { c.innerHTML = '<p style="color:var(--muted);font-size:13px">No jobs yet.</p>'; return; }
+    c.innerHTML = jobs.map(j => `
+      <div class="job-row">
+        <div class="jr-top">
+          <span class="job-filename">${esc(j.filename)}</span>
+          <span class="badge badge-${j.status === 'complete' ? 'complete' : j.status === 'error' ? 'error' : 'processing'}">${j.status}</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${j.status==='complete'?100:j.chunks_total?Math.round(j.chunks_done/j.chunks_total*100):0}%"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">
+          ${j.chunks_total ? `${j.chunks_done}/${j.chunks_total} chunks` : ''}
+          ${j.error_message ? `<span style="color:var(--coral)"> — ${esc(j.error_message)}</span>` : ''}
+          · ${fmtDate(j.created_at)}
+        </div>
+      </div>`).join('');
+  } catch {}
+}
+
+async function checkRagStatus() {
+  try {
+    const res = await fetch(`${API}/ingest/status`);
+    const d = await res.json();
+    const el = document.getElementById('rag-status-badge');
+    const badge = document.getElementById('rag-badge');
+    if (d.index_loaded) {
+      el.textContent = `✓ ${d.doc_count} chunks indexed`;
+      el.style.color = 'var(--teal)';
+      badge.style.display = 'flex';
+    } else {
+      el.textContent = 'No index yet — upload documents below';
+    }
+  } catch {}
+}
+
+// ─── Notifications ───
+async function loadNotifications() {
+  const c = document.getElementById('notif-list');
+  c.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading…</p>';
+  clearUnread();
+  try {
+    const res = await fetch(`${API}/notifications`);
+    const list = await res.json();
+    if (!list.length) { c.innerHTML = '<div class="empty"><h3>No notifications yet</h3><p>Indexing and assessment events appear here.</p></div>'; return; }
+    c.innerHTML = list.map(n => `
+      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="markRead('${n.id}', this)">
+        <div class="notif-icon">${notifIcon(n.type)}</div>
+        <div>
+          <div class="notif-title">${esc(n.title)}</div>
+          <div class="notif-body">${esc(n.body)}</div>
+          <div class="notif-time">${fmtDate(n.created_at)}</div>
+        </div>
+      </div>`).join('');
+  } catch { c.innerHTML = '<div class="alert alert-error">Could not load notifications.</div>'; }
+}
+
+async function markRead(id, el) {
+  try {
+    await fetch(`${API}/notifications/${id}/read`, { method: 'PATCH' });
+    el.classList.remove('unread');
+  } catch {}
+}
+
+async function markAllRead() {
+  try {
+    await fetch(`${API}/notifications/mark-all-read`, { method: 'POST' });
+    document.querySelectorAll('.notif-row').forEach(r => r.classList.remove('unread'));
+    clearUnread();
+  } catch {}
+}
+
+function notifIcon(type) {
+  return { ingestion_complete: '📚', ingestion_started: '📄', ingestion_progress: '⚙️',
+           assessment_ready: '🎓', assessment_approved: '✓', error: '⚠️' }[type] || '💬';
+}
+
+// ─── Taxonomy reference ───
+const TAX_COLORS = {
+  self_system: 'th-self', metacognitive: 'th-meta', retrieval: 'th-ret',
+  comprehension: 'th-comp', analysis: 'th-anal', knowledge_utilization: 'th-util'
+};
+async function loadTaxRef() {
+  const c = document.getElementById('tax-ref');
+  if (c.children.length > 0) return;
+  try {
+    const res = await fetch(`${API}/taxonomy`);
+    const tax = await res.json();
+    c.innerHTML = Object.entries(tax).map(([k, lv]) => `
+      <div class="tax-card">
+        <div class="tax-hdr ${TAX_COLORS[k] || ''}">${esc(lv.name)}${lv.bloom_equivalent ? ` <span style="font-weight:400;font-size:10px">≈ Bloom: ${lv.bloom_equivalent}</span>` : ''}</div>
+        ${lv.sublevels.map(s => `<div class="tax-sub"><h4>${esc(s.name)}</h4><div class="verbs">${s.verbs.slice(0,5).join(' · ')}</div></div>`).join('')}
+      </div>`).join('');
+  } catch { c.innerHTML = '<div class="alert alert-error">Could not load taxonomy.</div>'; }
+}
+
+// ─── Helpers ───
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(iso) { return new Date(iso).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+function sysClass(s) {
+  if (!s) return '';
+  const sl = s.toLowerCase();
+  if (sl.includes('self')) return 'sys-self';
+  if (sl.includes('meta')) return 'sys-meta';
+  return 'sys-cog';
+}
+function rClass(r) {
+  return { advanced:'r-advanced', proficient:'r-proficient', developing:'r-developing', emerging:'r-emerging' }[(r||'').toLowerCase()] || 'r-not';
+}
+
+// ─── Init ───
+connectSSE();
+loadSidebar();
 </script>
 </body>
 </html>
