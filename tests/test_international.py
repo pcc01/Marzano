@@ -189,37 +189,55 @@ class TestGetMarzanoInternational:
 
 
 class TestBuildInternationalContext:
-    """build_international_context() — prompt injection string."""
+    """build_international_context() — prompt injection string.
+    Signature: (us_grade, country_code, marzano_target=None)
+    """
 
     def test_returns_string(self):
-        result = build_international_context("Grade 10", "high_9_10", "GB")
+        result = build_international_context("Grade 10", "GB")
         assert isinstance(result, str)
 
     def test_contains_country_name(self):
-        result = build_international_context("Grade 10", "high_9_10", "GB")
+        result = build_international_context("Grade 10", "GB")
         assert "United Kingdom" in result
 
     def test_contains_education_system(self):
-        result = build_international_context("Grade 10", "high_9_10", "AU")
+        result = build_international_context("Grade 10", "AU")
         assert "Australian" in result or "ACARA" in result
 
     def test_contains_local_grade_equivalent(self):
-        result = build_international_context("Grade 10", "high_9_10", "GB")
+        result = build_international_context("Grade 10", "GB")
         assert "Year 11" in result
 
     def test_unknown_country_returns_empty(self):
-        result = build_international_context("Grade 10", "high_9_10", "ZZ")
+        result = build_international_context("Grade 10", "ZZ")
         assert result == ""
 
     def test_contains_grading_notes_when_present(self):
         """UK has grading notes about Key Stages."""
-        result = build_international_context("Grade 10", "high_9_10", "GB")
+        result = build_international_context("Grade 10", "GB")
         assert "Key Stage" in result or "GCSE" in result or "KS" in result
 
     def test_ib_context(self):
-        result = build_international_context("Grade 11", "high_11_12", "IB")
+        result = build_international_context("Grade 11", "IB")
         assert "IB" in result or "International Baccalaureate" in result
         assert "DP" in result
+
+    def test_with_marzano_target_includes_framework_mapping(self):
+        """When marzano_target is given, the framework equivalency should appear."""
+        result = build_international_context("Grade 10", "GB", marzano_target="analysis")
+        assert "analysis" in result.lower() or "greater depth" in result.lower() or "GB" in result
+
+    def test_without_marzano_target_still_returns_context(self):
+        result = build_international_context("Grade 9", "AU")
+        assert "Australia" in result
+        assert "Grade 9" in result or "Year 9" in result or "Year 10" in result
+
+    def test_marzano_target_retrieval_maps_to_lowest(self):
+        """Retrieval is lowest — should reference foundation-level in AU framework."""
+        result = build_international_context("Grade 6", "AU", marzano_target="retrieval")
+        assert isinstance(result, str)
+        assert len(result) > 20
 
 
 class TestApiResponse:

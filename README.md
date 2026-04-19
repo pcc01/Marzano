@@ -3,7 +3,7 @@
 > AI-powered educational assessment grounded in **Marzano's New Taxonomy of Educational Objectives**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4.0-blue)](https://github.com/pcc01/Marzano/blob/main/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.1-blue)](https://github.com/pcc01/Marzano/blob/main/CHANGELOG.md)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)](https://www.postgresql.org/)
@@ -479,7 +479,7 @@ python -m pytest tests/test_api_e2e.py             # Full API (mocked DB + AI)
 | `test_international.py` | 54 | Country registry, grade equivalency map, Marzano ↔ framework mapping |
 | `test_haystack_pipeline.py` | 20 | Metadata filter, store load/reload, retrieval with filter |
 | `test_api_e2e.py` | 34 | All API endpoints via FastAPI TestClient (DB + AI mocked) |
-| **Total** | **177** | **100% pass rate** |
+| **Total** | **187** | **100% pass rate** |
 
 ---
 

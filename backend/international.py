@@ -389,21 +389,30 @@ def get_marzano_international(marzano_level: str, country_code: str = None) -> d
 
 def build_international_context(
     us_grade: str,
-    marzano_level: str,
     country_code: str,
+    marzano_target: Optional[str] = None,
 ) -> str:
     """
     Build context string for injection into the AI prompt
     when assessing a student from an international system.
+
+    Args:
+        us_grade: US grade level string (e.g. "Grade 9")
+        country_code: ISO-like country code (e.g. "GB", "AU", "IB")
+        marzano_target: Optional Marzano level key for framework mapping
+                        (e.g. "analysis", "knowledge_utilization")
     """
     country = COUNTRIES.get(country_code)
     if not country:
         return ""
 
     grade_equiv = get_grade_equivalent(us_grade, country_code)
-    marzano_equiv = MARZANO_TO_INTERNATIONAL.get(marzano_level, {}).get(
-        country_code.replace("-", "_"), ""
-    )
+
+    # Look up Marzano → international framework equivalency if level provided
+    marzano_equiv = ""
+    if marzano_target:
+        fw_map = MARZANO_TO_INTERNATIONAL.get(marzano_target, {})
+        marzano_equiv = fw_map.get(country_code, "")
 
     lines = [
         f"\nINTERNATIONAL CONTEXT:",
@@ -416,7 +425,8 @@ def build_international_context(
         lines.append(f"Equivalent in {country.name}: {grade_equiv}")
     if marzano_equiv:
         lines.append(
-            f"Marzano '{marzano_level}' maps to {country.name} framework as: {marzano_equiv}"
+            f"In {country.name}'s framework, this Marzano level ({marzano_target}) "
+            f"corresponds to: {marzano_equiv}"
         )
     if country.grading_notes:
         lines.append(f"System notes: {country.grading_notes}")

@@ -523,7 +523,13 @@ async def create_assessment(
     # International context (if country provided)
     intl_context = ""
     if country_code:
-        intl_context = build_international_context(grade_level, resolved_band, country_code)
+        # Determine Marzano target level from curriculum for framework mapping
+        from curriculum import get_subject as _get_subject
+        _subj = _get_subject(resolved_band, subject)
+        marzano_target = _subj.marzano_target if _subj else None
+        intl_context = build_international_context(
+            grade_level, country_code, marzano_target=marzano_target
+        )
         if local_grade:
             intl_context += f"Student's local grade designation: {local_grade}\n"
         system_prompt += intl_context
@@ -607,7 +613,7 @@ async def create_assessment(
         "teacher_comments": "",
         "approved": False,
         "submitted_by": submitted_by,
-        "created_at": record.created_at.isoformat(),
+        "created_at": record.created_at.isoformat() if record.created_at else datetime.datetime.utcnow().isoformat(),
     }
 
 
@@ -630,6 +636,8 @@ async def list_all_assessments(session: AsyncSession = Depends(get_session)):
             "overall_level": (r.feedback or {}).get("overall_level", ""),
             "approved": r.approved,
             "has_video": r.has_video,
+            "country_code": r.country_code,
+            "local_grade": r.local_grade,
             "created_at": r.created_at.isoformat(),
         }
         for r in records
@@ -690,26 +698,35 @@ async def student_submit(
     student_name: str = Form(...),
     subject: str = Form(...),
     grade_level: str = Form(...),
+    grade_band: str = Form(""),
+    student_state: str = Form(""),
     student_passion: str = Form(...),
     artifact_description: str = Form(...),
     student_reflection: str = Form(""),
+    country_code: str = Form(""),
+    local_grade: str = Form(""),
     artifact_file: Optional[UploadFile] = File(None),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Student-facing submission endpoint.
-    Identical to /assess but sets submitted_by='student'.
-    Teachers see a badge on these in the dashboard.
+    Accepts all the same fields as /assess — including grade_band,
+    student_state, country_code, and local_grade — so student submissions
+    benefit from the same curriculum context, standards filtering, and
+    international context injection as teacher submissions.
     """
-    # Reuse the assess logic by delegating
     return await create_assessment(
         student_name=student_name,
         subject=subject,
         grade_level=grade_level,
+        grade_band=grade_band,
+        student_state=student_state,
         student_passion=student_passion,
         artifact_description=artifact_description,
         student_reflection=student_reflection,
         submitted_by="student",
+        country_code=country_code,
+        local_grade=local_grade,
         artifact_file=artifact_file,
         session=session,
     )

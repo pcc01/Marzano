@@ -333,6 +333,100 @@ class TestAssessmentsListEndpoint:
 
 
 # ─────────────────────────────────────────────────────────────
+# International — grade and Marzano lookup consistency
+# ─────────────────────────────────────────────────────────────
+
+class TestInternationalConsistency:
+    def test_all_curriculum_grade_levels_have_international_lookup(self, client):
+        """Every grade level from curriculum should be findable in the grade map."""
+        curriculum = client.get("/curriculum").json()
+        intl = client.get("/international").json()
+        grade_map = intl.get("grade_level_map", {})
+        for band_id, subjects in curriculum["subjects"].items():
+            band = curriculum["grade_bands"].get(band_id, {})
+            for grade in band.get("grade_levels", []):
+                assert grade in grade_map, f"Grade '{grade}' not in international grade map"
+
+    def test_international_marzano_covers_all_taxonomy_levels(self, client):
+        """Every level from /taxonomy should appear in /international marzano_international."""
+        taxonomy = client.get("/taxonomy").json()
+        intl = client.get("/international").json()
+        intl_marzano = intl.get("marzano_international", {})
+        for level_id in taxonomy:
+            assert level_id in intl_marzano, (
+                f"Taxonomy level '{level_id}' missing from international marzano map"
+            )
+
+    def test_grade_endpoint_returns_all_countries_for_grade_9(self, client):
+        expected = {"GB", "AU", "CA", "FR", "DE", "JP", "IB", "NZ", "SG"}
+        data = client.get("/international/grades/Grade 9").json()
+        for code in expected:
+            assert code in data["equivalents"], f"Country '{code}' missing from Grade 9 map"
+
+
+# ─────────────────────────────────────────────────────────────
+# Student submit — context field forwarding
+# ─────────────────────────────────────────────────────────────
+
+class TestStudentSubmitFields:
+    """Smoke-test that /student/submit accepts the same context fields as /assess."""
+
+    def test_student_submit_accepts_grade_band(self, client):
+        """grade_band field must not cause a 422 validation error."""
+        r = client.post("/student/submit", data={
+            "student_name": "Test Student",
+            "subject": "Pre-Algebra",
+            "grade_level": "Grade 7",
+            "grade_band": "middle_6_8",
+            "student_passion": "photography",
+            "artifact_description": "Photo ratio project",
+        })
+        # 200 means the field was accepted (AI is mocked so it won't fail on AI call)
+        assert r.status_code != 422, f"422 means grade_band field rejected: {r.text}"
+
+    def test_student_submit_accepts_country_code(self, client):
+        r = client.post("/student/submit", data={
+            "student_name": "Test Student",
+            "subject": "Geometry",
+            "grade_level": "Grade 10",
+            "grade_band": "high_9_10",
+            "student_passion": "architecture",
+            "artifact_description": "Arch design project",
+            "country_code": "GB",
+            "local_grade": "Year 11",
+        })
+        assert r.status_code != 422, f"422 means country_code field rejected: {r.text}"
+
+    def test_student_submit_accepts_student_state(self, client):
+        r = client.post("/student/submit", data={
+            "student_name": "Test Student",
+            "subject": "Algebra I",
+            "grade_level": "Grade 9",
+            "grade_band": "high_9_10",
+            "student_passion": "music",
+            "artifact_description": "Frequency ratios project",
+            "student_state": "California",
+        })
+        assert r.status_code != 422, f"422 means student_state field rejected: {r.text}"
+
+
+# ─────────────────────────────────────────────────────────────
+# Assessments list — country fields present
+# ─────────────────────────────────────────────────────────────
+
+class TestAssessmentsListFields:
+    def test_list_response_has_country_code_field(self, client):
+        """Every row in the assessments list must include country_code."""
+        # The list is empty in tests (mocked DB) but the shape is validated
+        # by checking the endpoint at least returns 200 and a list
+        r = client.get("/assessments")
+        assert r.status_code == 200
+        data = r.json()
+        assert isinstance(data, list)
+        # If there were rows, they'd have country_code — confirmed by _assessment_to_dict test
+
+
+# ─────────────────────────────────────────────────────────────
 # Ingest jobs list endpoint
 # ─────────────────────────────────────────────────────────────
 

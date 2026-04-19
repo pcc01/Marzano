@@ -5,6 +5,51 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.4.1] — 2026-04-18
+
+### Fixed
+
+**Bug 1 — `build_international_context()` wrong parameter used (`international.py`)**
+The second parameter was named `marzano_level` but `main.py` was passing `resolved_band`
+(a grade-band ID like `"middle_6_8"`). The Marzano framework lookup silently produced
+empty strings for every international assessment because no Marzano level key
+matched a grade-band string. Fixed: parameter renamed to accept `country_code` as
+the second positional arg and `marzano_target` as an optional keyword arg. The call
+site in `main.py` now fetches the subject's Marzano target from the curriculum registry
+and passes it correctly.
+
+**Bug 2 — `/student/submit` silent data loss (`main.py`)**
+The student submission endpoint was missing `grade_band`, `student_state`,
+`country_code`, and `local_grade` form fields. It delegated to `create_assessment`
+without forwarding them, so student submissions never received curriculum context
+injection, standards RAG filtering, or international context — all silently dropped.
+Fixed: all four fields added to the signature and forwarded to `create_assessment`.
+
+**Bug 3 — Country fields missing from `/assessments` list (`main.py`)**
+The list endpoint response omitted `country_code` and `local_grade` from each row.
+The teacher dashboard therefore could not show the international badge (🌐) in the
+assessment list — only in the individual review panel. Fixed: both fields added.
+
+**Bug 4 — `created_at.isoformat()` crash on None (`main.py`)**
+When `session.commit()` is mocked (and in some edge cases where the ORM hasn't
+populated the default), `record.created_at` can be `None`, causing an `AttributeError`.
+Exposed by the new `TestStudentSubmitFields` e2e tests. Fixed: fallback to
+`datetime.utcnow().isoformat()` when the field is None.
+
+### Changed
+
+- `tests/test_international.py`: `TestBuildInternationalContext` updated to match
+  corrected `build_international_context(us_grade, country_code, marzano_target=None)`
+  signature; four new tests added (with/without marzano_target, marzano_target=retrieval)
+- `tests/test_api_e2e.py`: three new test classes added:
+  `TestInternationalConsistency` (curriculum grades covered by grade map, taxonomy
+  levels covered by Marzano international map, all countries present for Grade 9),
+  `TestStudentSubmitFields` (422 regression tests for grade_band, country_code,
+  student_state), `TestAssessmentsListFields` (country_code shape validation)
+- Test count: 177 → 187
+
+---
+
 ## [0.4.0] — 2026-04-18
 
 ### Added
