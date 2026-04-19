@@ -1,8 +1,20 @@
 version: "3.9"
 
+# ── AI provider selection ───────────────────────────────────────────────────
+# Set AI_PROVIDER=anthropic in .env  →  uses the Anthropic API (default)
+# Set AI_PROVIDER=ollama    in .env  →  uses the local Ollama service
+#
+# To switch to Ollama:
+#   1. Edit .env: AI_PROVIDER=ollama  (and set OLLAMA_MODEL, e.g. llama3 or llava)
+#   2. Uncomment the ollama service block below
+#   3. Uncomment ollama_models in the volumes section at the bottom
+#   4. docker compose up --build
+#   5. docker compose exec ollama ollama pull llama3
+# ───────────────────────────────────────────────────────────────────────────
+
 services:
 
-  # ── PostgreSQL ────────────────────────────────────────────
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     environment:
@@ -20,7 +32,7 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # ── Backend API ───────────────────────────────────────────
+  # ── Backend API ────────────────────────────────────────────────────────────
   backend:
     build: ./backend
     env_file: .env
@@ -30,15 +42,18 @@ services:
       - DATA_DIR=/data
     volumes:
       - rag_data:/data
-      - ./backend:/app       # live reload in dev
+      - ./backend:/app       # live-reload in dev (uvicorn --reload)
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
+      # Uncomment the line below when using Ollama so the backend waits for it:
+      # ollama:
+      #   condition: service_healthy
     restart: unless-stopped
 
-  # ── Frontend (nginx) ──────────────────────────────────────
+  # ── Frontend (nginx) ───────────────────────────────────────────────────────
   frontend:
     image: nginx:alpine
     volumes:
@@ -50,13 +65,24 @@ services:
       - backend
     restart: unless-stopped
 
-  # ── Ollama (optional — uncomment to use local AI) ─────────
+  # ── Ollama — local AI (optional) ───────────────────────────────────────────
+  # Uncomment this entire block to run AI locally without an API key.
+  # Requires Docker Desktop with enough RAM: llama3 ≈ 5 GB, llava ≈ 4 GB.
+  #
   # ollama:
   #   image: ollama/ollama
   #   volumes:
   #     - ollama_models:/root/.ollama
   #   ports:
   #     - "11434:11434"
+  #   healthcheck:
+  #     test: ["CMD", "ollama", "list"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 12
+  #     start_period: 30s
+  #   restart: unless-stopped
+  #   # GPU support (Nvidia) — remove if running CPU-only:
   #   deploy:
   #     resources:
   #       reservations:
@@ -68,4 +94,4 @@ services:
 volumes:
   postgres_data:
   rag_data:
-  # ollama_models:
+  # ollama_models:   # uncomment when using Ollama
