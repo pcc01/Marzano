@@ -46,7 +46,19 @@ A student passionate about **photography** demonstrates the same geometry standa
 | LMS integration (Canvas, Google Classroom) | 🔜 |
 
 ---
+<img width="2560" height="1600" alt="Teacher_Portal_Index_docs_Standards" src="https://github.com/user-attachments/assets/3763caea-083c-4ee5-bd15-b7e4465fce90" />
+<img width="2140" height="1432" alt="Teacher_Portal_NewAssessment" src="https://github.com/user-attachments/assets/a7091aa3-2746-4193-bf42-11b9c108c692" />
+<img width="2310" height="1508" alt="Teacher_Portal_International_Classrooms" src="https://github.com/user-attachments/assets/4f77a55e-5b9e-4523-b8cd-4b8c54350fb5" />
+<img width="2510" height="1544" alt="Teacher_Portal_Taxonomy_Reference" src="https://github.com/user-attachments/assets/94449abd-abb6-4f8c-9c75-b534da13d731" />
+<img width="2478" height="1550" alt="Learner_Portal_Submit" src="https://github.com/user-attachments/assets/86074433-9026-4bce-978f-f0bd51be1316" />
+<img width="2154" height="1554" alt="Learner_Portal_Submit_first_screen" src="https://github.com/user-attachments/assets/1e57c18a-74b5-49e3-957f-91831dfd1ae2" />
+<img width="2336" height="1406" alt="Learner_Portal_Submit_second_screen" src="https://github.com/user-attachments/assets/36a8c94f-50e9-46de-97eb-3394e5b0a16a" />
+<img width="2510" height="1544" alt="Teacher_Portal_Taxonomy_Reference" src="https://github.com/user-attachments/assets/cec5d299-37a4-4c75-9b91-30a81826de9f" />
+<img width="2560" height="1600" alt="Teacher_Portal_Index_docs_Standards" src="https://github.com/user-attachments/assets/b01036ac-b8f5-43a5-9044-02c132794fcf" />
+<img width="2140" height="1432" alt="Teacher_Portal_NewAssessment" src="https://github.com/user-attachments/assets/6d08619e-bdea-4bf7-a8f9-c783f97dca42" />
+<img width="2310" height="1508" alt="Teacher_Portal_International_Classrooms" src="https://github.com/user-attachments/assets/e5ba58af-0d50-4898-aab9-ba7dd51bcb75" />
 
+---
 ## Marzano's New Taxonomy
 
 Unlike Bloom's Taxonomy, Marzano's model recognises that **motivation and metacognition fire before cognition**. The three systems engage in sequence, and the AI models this ordering in every assessment:
