@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marzano Assessment — Teacher Dashboard</title>
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.09);
+    --text: #1a1a18;
+    --muted: #6b6b65;
+    --accent: #4a3fc0;
+    --accent-light: #eeedfb;
+    --teal: #0f6e56;
+    --teal-light: #e1f5ee;
+    --amber: #854f0b;
+    --amber-light: #faeeda;
+    --coral: #993c1d;
+    --coral-light: #faece7;
+    --green: #3b6d11;
+    --green-light: #eaf3de;
+    --blue: #185fa5;
+    --blue-light: #e6f1fb;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui,-apple-system,sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+  /* App shell */
+  .app { display: grid; grid-template-columns: 264px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--surface); border-right: 0.5px solid var(--border); display: flex; flex-direction: column; }
+  .main { overflow-y: auto; }
+
+  /* Sidebar */
+  .sidebar-header { padding: 18px 18px 14px; border-bottom: 0.5px solid var(--border); }
+  .sidebar-header h1 { font-size: 15px; font-weight: 700; color: var(--accent); }
+  .sidebar-header p { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .nav-section { padding: 10px 12px 6px; }
+  .nav-section h2 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); padding: 0 6px; margin-bottom: 4px; }
+  .nav-btn {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 7px 8px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; color: var(--muted); background: none; border: none;
+    font-family: inherit; transition: all 0.12s; text-align: left;
+  }
+  .nav-btn:hover { background: var(--bg); color: var(--text); }
+  .nav-btn.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  .nav-btn svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+  .nav-badge {
+    margin-left: auto; background: var(--coral); color: white;
+    font-size: 10px; font-weight: 700; border-radius: 10px;
+    padding: 1px 6px; min-width: 18px; text-align: center;
+  }
+  .nav-badge.green { background: var(--teal); }
+
+  .recent-list { padding: 0 10px 10px; flex: 1; overflow-y: auto; }
+  .recent-item {
+    padding: 8px 8px; border-radius: 8px; cursor: pointer;
+    margin-bottom: 2px; border: 0.5px solid transparent; transition: all 0.12s;
+  }
+  .recent-item:hover { background: var(--bg); border-color: var(--border); }
+  .recent-item.active { background: var(--accent-light); border-color: var(--accent); }
+  .recent-name { font-weight: 600; font-size: 12px; }
+  .recent-meta { font-size: 10px; color: var(--muted); display: flex; gap: 5px; align-items: center; margin-top: 1px; }
+
+  /* Student portal link at sidebar bottom */
+  .sidebar-footer { padding: 12px; border-top: 0.5px solid var(--border); margin-top: auto; }
+  .portal-link {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border-radius: 8px; background: var(--teal-light); color: var(--teal);
+    text-decoration: none; font-size: 12px; font-weight: 600;
+  }
+  .portal-link:hover { opacity: 0.85; }
+
+  /* Main panels */
+  .main-inner { padding: 24px; max-width: 900px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .page-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+  .page-hdr h2 { font-size: 19px; font-weight: 700; }
+  .page-hdr p { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  /* Badges */
+  .badge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+  .badge-approved { background: var(--green-light); color: var(--green); }
+  .badge-draft { background: var(--amber-light); color: var(--amber); }
+  .badge-level { background: var(--teal-light); color: var(--teal); }
+  .badge-student { background: var(--blue-light); color: var(--blue); }
+  .badge-video { background: var(--coral-light); color: var(--coral); }
+  .badge-error { background: var(--coral-light); color: var(--coral); }
+  .badge-processing { background: var(--amber-light); color: var(--amber); }
+  .badge-complete { background: var(--green-light); color: var(--green); }
+  .badge-pending { background: #f1efe8; color: #5f5e5a; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 14px; }
+  .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 12px; }
+
+  /* Form */
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 5px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 8px 12px; border: 0.5px solid var(--border);
+    border-radius: 8px; font-size: 13px; font-family: inherit;
+    background: var(--surface); color: var(--text); outline: none; transition: border-color 0.12s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group textarea { resize: vertical; min-height: 70px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .upload-zone {
+    border: 1.5px dashed var(--border); border-radius: 10px; padding: 20px;
+    text-align: center; cursor: pointer; transition: all 0.12s; background: var(--bg);
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-light); }
+  .upload-zone p { color: var(--muted); font-size: 12px; }
+  #file-preview { font-size: 11px; color: var(--teal); margin-top: 6px; }
+
+  /* Buttons */
+  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 0.5px solid var(--border); transition: all 0.12s; font-family: inherit; }
+  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface); color: var(--text); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-success { background: var(--teal); color: white; border-color: var(--teal); }
+  .btn-success:hover { opacity: 0.9; }
+  .btn-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+  /* Assessment grid */
+  .assess-grid { display: flex; flex-direction: column; gap: 10px; }
+  .assess-row {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color 0.12s;
+  }
+  .assess-row:hover { border-color: var(--accent); }
+  .assess-row .ar-main { flex: 1; min-width: 0; }
+  .assess-row .ar-name { font-weight: 700; font-size: 14px; }
+  .assess-row .ar-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .assess-row .ar-badges { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+  /* Review layout */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .summary-box { padding: 14px; background: var(--bg); border-radius: 10px; border: 0.5px solid var(--border); }
+  .summary-box h4 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
+  .summary-box p { font-size: 13px; }
+  .taxonomy-item { border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+  .taxonomy-hdr { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .tx-sys { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .tx-lvl { font-weight: 700; font-size: 13px; }
+  .tx-sub { font-size: 11px; color: var(--muted); }
+  .taxonomy-body { padding: 9px 14px 12px; background: var(--bg); border-top: 0.5px solid var(--border); font-size: 12px; color: var(--muted); }
+  .taxonomy-body strong { color: var(--text); display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+  .sys-self { background: var(--accent-light); border-left: 3px solid var(--accent); }
+  .sys-meta { background: var(--teal-light); border-left: 3px solid var(--teal); }
+  .sys-cog  { background: var(--amber-light); border-left: 3px solid var(--amber); }
+  .rating-pill { padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+  .r-advanced  { background: var(--green-light);  color: var(--green); }
+  .r-proficient{ background: var(--teal-light);   color: var(--teal); }
+  .r-developing{ background: var(--amber-light);  color: var(--amber); }
+  .r-emerging  { background: var(--coral-light);  color: var(--coral); }
+  .r-not       { background: #f1efe8; color: #888780; }
+  .reasoning { background: var(--bg); border: 0.5px solid var(--border); border-radius: 8px; padding: 12px; font-size: 12px; color: var(--muted); line-height: 1.7; font-style: italic; }
+  .teacher-section { background: var(--accent-light); border: 1px solid rgba(74,63,192,0.2); border-radius: 12px; padding: 16px; margin-top: 14px; }
+  .teacher-section h3 { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+
+  /* Ingestion panel */
+  .ingest-drop {
+    border: 2px dashed var(--border); border-radius: 12px; padding: 32px;
+    text-align: center; cursor: pointer; background: var(--bg); transition: all 0.15s;
+  }
+  .ingest-drop:hover, .ingest-drop.dragover { border-color: var(--accent); background: var(--accent-light); }
+  .ingest-drop .di { font-size: 32px; margin-bottom: 8px; }
+  .ingest-drop p { color: var(--muted); font-size: 13px; }
+  .job-row { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .job-row .jr-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .job-filename { font-weight: 600; font-size: 13px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+
+  /* Notification toasts */
+  #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+  .toast {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 12px 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    display: flex; gap: 10px; align-items: flex-start;
+    animation: slideIn 0.2s ease; transition: opacity 0.3s;
+  }
+  .toast.hiding { opacity: 0; }
+  @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .toast-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .toast-body { flex: 1; min-width: 0; }
+  .toast-title { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+  .toast-msg { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .toast-close { font-size: 16px; color: var(--muted); cursor: pointer; flex-shrink: 0; line-height: 1; padding: 2px; }
+  .toast-close:hover { color: var(--text); }
+  .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent); border-radius: 0 0 0 12px; transition: width 0.3s; }
+  .toast { position: relative; overflow: hidden; }
+
+  /* Notification history panel */
+  .notif-row { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; gap: 10px; }
+  .notif-row.unread { border-left: 3px solid var(--accent); }
+  .notif-icon { font-size: 18px; flex-shrink: 0; }
+  .notif-title { font-weight: 600; font-size: 13px; }
+  .notif-body { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .notif-time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  #notif-dot { display: none; width: 7px; height: 7px; background: var(--coral); border-radius: 50%; margin-left: auto; flex-shrink: 0; }
+
+  /* SSE status bar */
+  .sse-bar { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); padding: 8px 12px; border-top: 0.5px solid var(--border); }
+  .sse-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+  .sse-dot.connected { background: var(--teal); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* Taxonomy reference */
+  .tax-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .tax-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .tax-hdr { padding: 10px 14px; font-weight: 700; font-size: 12px; }
+  .th-self { background: var(--accent-light); color: var(--accent); }
+  .th-meta { background: var(--teal-light); color: var(--teal); }
+  .th-ret  { background: #f1efe8; color: #5f5e5a; }
+  .th-comp { background: var(--amber-light); color: var(--amber); }
+  .th-anal { background: var(--coral-light); color: var(--coral); }
+  .th-util { background: var(--green-light); color: var(--green); }
+  .tax-sub { padding: 7px 14px; border-top: 0.5px solid var(--border); }
+  .tax-sub h4 { font-weight: 700; font-size: 11px; margin-bottom: 2px; }
+  .tax-sub .verbs { font-size: 10px; color: var(--muted); }
+
+  /* Alerts */
+  .alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
+  .alert-error   { background: var(--coral-light); color: var(--coral); }
+  .alert-success { background: var(--green-light); color: var(--green); }
+
+  .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+  .empty h3 { font-size: 15px; color: var(--text); margin-bottom: 6px; }
+
+  /* Spinner */
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin360 0.7s linear infinite; vertical-align: middle; margin-right: 4px; }
+  @keyframes spin360 { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <h1>Marzano AI</h1>
+      <p>Teacher Assessment Dashboard</p>
+    </div>
+
+    <div class="nav-section">
+      <h2>Assessment</h2>
+      <button class="nav-btn active" id="nav-submit" onclick="nav('submit')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M2 8h12" stroke-linecap="round"/></svg>
+        New Assessment
+      </button>
+      <button class="nav-btn" id="nav-list" onclick="nav('list'); loadList()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h7" stroke-linecap="round"/></svg>
+        All Assessments
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <h2>Knowledge Base</h2>
+      <button class="nav-btn" id="nav-ingest" onclick="nav('ingest'); loadJobs()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h10M8 2v8M5 7l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Index Documents
+        <span id="rag-badge" class="nav-badge green" style="display:none">●</span>
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <h2>Reference</h2>
+      <button class="nav-btn" id="nav-notifications" onclick="nav('notifications'); loadNotifications()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a4 4 0 0 1 4 4v3l1 2H3l1-2V6a4 4 0 0 1 4-4zM6.5 13a1.5 1.5 0 0 0 3 0" stroke-linecap="round"/></svg>
+        Notifications
+        <span id="notif-badge" class="nav-badge" style="display:none">0</span>
+      </button>
+      <button class="nav-btn" id="nav-international" onclick="nav('international'); loadInternational()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 2c-2 2-3 4-3 6s1 4 3 6M8 2c2 2 3 4 3 6s-1 4-3 6M2 8h12" stroke-linecap="round"/></svg>
+        International
+      </button>
+      <button class="nav-btn" id="nav-taxonomy" onclick="nav('taxonomy'); loadTaxRef()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h5v4H2zM9 3h5v4H9zM2 11h12" stroke-linecap="round"/></svg>
+        Taxonomy Reference
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <h2>Recent</h2>
+    </div>
+    <div class="recent-list" id="recent-list"></div>
+
+    <div class="sidebar-footer">
+      <a href="/student/" class="portal-link">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM2 14a6 6 0 0 1 12 0" stroke-linecap="round"/></svg>
+        Student Portal
+      </a>
+    </div>
+
+    <div class="sse-bar">
+      <div class="sse-dot" id="sse-dot"></div>
+      <span id="sse-label">Connecting…</span>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main class="main">
+  <div class="main-inner">
+
+    <!-- New Assessment -->
+    <div id="panel-submit" class="panel active">
+      <div class="page-hdr"><div><h2>New Assessment</h2><p>Submit student work — text, image, PDF, or video.</p></div></div>
+      <div id="submit-alert" class="alert" style="display:none"></div>
+
+      <form id="assess-form" onsubmit="submitAssessment(event)">
+        <div class="card">
+          <div class="card-title">Student</div>
+          <div class="form-row">
+            <div class="form-group"><label>Name</label><input name="student_name" placeholder="Full name" required></div>
+            <div class="form-group"><label>State / Province</label>
+              <input name="student_state" id="student_state" placeholder="e.g. California (for standards alignment)" list="states-list">
+              <datalist id="states-list">
+                <option value="Alabama"><option value="Alaska"><option value="Arizona">
+                <option value="Arkansas"><option value="California"><option value="Colorado">
+                <option value="Connecticut"><option value="Delaware"><option value="Florida">
+                <option value="Georgia"><option value="Hawaii"><option value="Idaho">
+                <option value="Illinois"><option value="Indiana"><option value="Iowa">
+                <option value="Kansas"><option value="Kentucky"><option value="Louisiana">
+                <option value="Maine"><option value="Maryland"><option value="Massachusetts">
+                <option value="Michigan"><option value="Minnesota"><option value="Mississippi">
+                <option value="Missouri"><option value="Montana"><option value="Nebraska">
+                <option value="Nevada"><option value="New Hampshire"><option value="New Jersey">
+                <option value="New Mexico"><option value="New York"><option value="North Carolina">
+                <option value="North Dakota"><option value="Ohio"><option value="Oklahoma">
+                <option value="Oregon"><option value="Pennsylvania"><option value="Rhode Island">
+                <option value="South Carolina"><option value="South Dakota"><option value="Tennessee">
+                <option value="Texas"><option value="Utah"><option value="Vermont">
+                <option value="Virginia"><option value="Washington"><option value="West Virginia">
+                <option value="Wisconsin"><option value="Wyoming">
+              </datalist>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Country <span style="font-weight:400;color:var(--muted)">(optional — for international classrooms)</span></label>
+              <select id="country_code_sel" name="country_code" onchange="onCountryChange(this.value)">
+                <option value="">United States (default)</option>
+                <option value="GB">United Kingdom (England)</option>
+                <option value="AU">Australia</option>
+                <option value="CA">Canada</option>
+                <option value="FR">France</option>
+                <option value="DE">Germany</option>
+                <option value="JP">Japan</option>
+                <option value="IB">International Baccalaureate</option>
+                <option value="NZ">New Zealand</option>
+                <option value="SG">Singapore</option>
+              </select>
+            </div>
+            <div class="form-group" id="local-grade-group" style="display:none">
+              <label>Local grade designation</label>
+              <input id="local_grade_input" name="local_grade" placeholder="e.g. Year 10, Seconde, 高校1年">
+              <div id="local-grade-hint" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Grade band</label>
+              <select id="grade_band_sel" onchange="loadSubjects(this.value)" required>
+                <option value="">Select grade band…</option>
+                <option value="elementary_k2">Early Elementary (K–2)</option>
+                <option value="elementary_3_5">Upper Elementary (3–5)</option>
+                <option value="middle_6_8">Middle School (6–8)</option>
+                <option value="high_9_10">High School Early (9–10)</option>
+                <option value="high_11_12">High School Advanced (11–12)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Grade level</label>
+              <select name="grade_level" id="grade_level_sel" required>
+                <option value="">Select grade band first…</option>
+              </select>
+              <input type="hidden" name="grade_band" id="grade_band_hidden">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Subject</label>
+              <select name="subject" id="subject_sel" required onchange="onSubjectChange(this)">
+                <option value="">Select grade band first…</option>
+              </select>
+              <div id="subject-hint" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+            </div>
+            <div class="form-group">
+              <label>Passion / Context</label>
+              <select name="student_passion" id="passion_sel" required onchange="updateHint(this)">
+                <option value="">Select…</option>
+                <option value="architecture">Architecture</option>
+                <option value="astronomy">Astronomy</option>
+                <option value="barrel_making">Barrel Making / Craft</option>
+                <option value="photography">Photography</option>
+                <option value="music">Music</option>
+                <option value="cooking">Cooking / Baking</option>
+                <option value="custom">Other</option>
+              </select>
+              <div id="passion-hint" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Artifact</div>
+          <div class="form-group">
+            <label>Upload file (optional)</label>
+            <div class="upload-zone" id="az" onclick="document.getElementById('af').click()">
+              <p>📎 <strong>Click or drag</strong> — image, video, PDF, schematic</p>
+              <div id="file-preview"></div>
+            </div>
+            <input type="file" id="af" name="artifact_file" style="display:none"
+              accept="image/*,video/*,.pdf,.doc,.docx,.txt" onchange="previewFile(this)">
+          </div>
+          <div class="form-group"><label>Artifact Description</label>
+            <textarea name="artifact_description" rows="4" placeholder="Describe what the student created. Be specific — the AI cites this directly in feedback." required></textarea>
+          </div>
+          <div class="form-group"><label>Student Reflection (optional)</label>
+            <textarea name="student_reflection" rows="3" placeholder="Paste student's own reflection notes — key source of metacognitive evidence."></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn">Generate Marzano Assessment</button>
+      </form>
+    </div>
+
+    <!-- Assessment List -->
+    <div id="panel-list" class="panel">
+      <div class="page-hdr"><div><h2>All Assessments</h2><p>Click any row to review and edit.</p></div></div>
+      <div id="list-content"></div>
+    </div>
+
+    <!-- Review -->
+    <div id="panel-review" class="panel">
+      <div class="page-hdr" style="align-items:center">
+        <div><h2 id="rv-title">Review</h2><p id="rv-meta" style="color:var(--muted);font-size:12px;margin-top:2px"></p></div>
+        <button class="btn btn-secondary" onclick="nav('list');loadList()" style="flex-shrink:0">← Back</button>
+      </div>
+      <div id="review-alert" class="alert" style="display:none"></div>
+
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+          Overall <span id="rv-badge" class="badge badge-level"></span>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-box"><h4>Strengths</h4><p id="rv-strengths"></p></div>
+          <div class="summary-box"><h4>Growth Areas</h4><p id="rv-growth"></p></div>
+        </div>
+        <div class="summary-box" style="margin-bottom:10px"><h4>Next Level Challenge</h4><p id="rv-next"></p></div>
+        <div class="summary-box"><h4>Passion Integration</h4><p id="rv-passion"></p></div>
+        <div id="rv-standards-wrap" class="summary-box" style="display:none;margin-top:10px">
+          <h4>Standards cited</h4>
+          <p id="rv-standards" style="font-size:12px"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Marzano Taxonomy Breakdown</div>
+        <div id="rv-breakdown"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">AI Reasoning</div>
+        <div class="reasoning" id="rv-reasoning"></div>
+      </div>
+
+      <!-- FEATURE 1: View Original AI Draft -->
+      <div class="card" id="original-draft-card" style="display:none">
+        <div class="card-title">Original AI Draft</div>
+        <p style="font-size:12px; color:var(--muted); margin-bottom:12px">
+          This is the AI's initial assessment before any edits. Compare it with your review to see what changed.
+        </p>
+        <button class="btn btn-secondary" onclick="toggleOriginalDraft()" style="width:100%;margin-bottom:12px">
+          <span id="draft-toggle-text">Show Original Draft</span>
+        </button>
+        <div id="original-draft-content" style="display:none; background:var(--bg); padding:12px; border-radius:8px; font-size:12px; max-height:300px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; font-family:monospace; color:var(--muted)"></div>
+      </div>
+
+      <!-- FEATURE 2: Standards Alignment (Teacher-Only Competency Assessment) -->
+      <div class="card" id="competency-card" style="display:none">
+        <div class="card-title">📊 Standards Alignment</div>
+        <p style="font-size:12px; color:var(--muted); margin-bottom:12px">
+          Evidence of competency against grade-level state standards (teacher-only analysis)
+        </p>
+        
+        <!-- Standards Evidence -->
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Evidence of Standards Competency</h4>
+          <ul id="competency-evidence" style="margin-top:8px; padding-left:20px; font-size:12px"></ul>
+        </div>
+
+        <!-- Grade Alignment -->
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Grade-Level Alignment</h4>
+          <p id="competency-alignment" style="font-size:12px"></p>
+        </div>
+
+        <!-- Competency Areas -->
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Demonstrated Competencies</h4>
+          <ul id="competency-areas" style="margin-top:8px; padding-left:20px; font-size:12px"></ul>
+        </div>
+
+        <!-- Growth Recommendations -->
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Growth Recommendations</h4>
+          <ul id="competency-growth" style="margin-top:8px; padding-left:20px; font-size:12px"></ul>
+        </div>
+
+        <!-- Rigor Analysis -->
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Cognitive Demand & Rigor</h4>
+          <p id="competency-rigor" style="font-size:12px"></p>
+        </div>
+
+        <!-- Teacher Notes -->
+        <div class="summary-box">
+          <h4>Summary for Teacher</h4>
+          <p id="competency-notes" style="font-size:12px; font-style:italic; color:var(--muted)"></p>
+        </div>
+      </div>
+
+      <div class="teacher-section">
+        <h3>✏ Teacher Review</h3>
+        <div class="form-group"><label>Your Comments</label>
+          <textarea id="tc-comments" rows="4" placeholder="Add your observations, corrections, or context…"></textarea>
+        </div>
+        <div class="form-group"><label>Override Level (optional)</label>
+          <select id="tc-level">
+            <option value="">Use AI assessment</option>
+            <option>Self System — Examining Importance</option>
+            <option>Self System — Examining Efficacy</option>
+            <option>Self System — Examining Emotional Response</option>
+            <option>Metacognitive — Goal Specification</option>
+            <option>Metacognitive — Process Monitoring</option>
+            <option>Cognitive: Retrieval — Executing</option>
+            <option>Cognitive: Comprehension — Integrating</option>
+            <option>Cognitive: Comprehension — Symbolizing</option>
+            <option>Cognitive: Analysis — Matching</option>
+            <option>Cognitive: Analysis — Generalizing</option>
+            <option>Cognitive: Analysis — Specifying</option>
+            <option>Cognitive: Knowledge Utilization — Problem Solving</option>
+            <option>Cognitive: Knowledge Utilization — Experimenting</option>
+            <option>Cognitive: Knowledge Utilization — Investigating</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="saveAssessment(false)">Save Draft</button>
+          <button class="btn btn-success" onclick="saveAssessment(true)">✓ Approve & Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ingest Panel -->
+    <div id="panel-ingest" class="panel">
+      <div class="page-hdr">
+        <div>
+          <h2>Index Documents</h2>
+          <p>Upload Marzano PDFs to the knowledge base. The AI will cite them in feedback.</p>
+        </div>
+        <div id="rag-status-badge" style="font-size:12px;color:var(--muted)">Loading…</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Upload a document</div>
+        <div class="ingest-drop" id="ingest-drop" onclick="document.getElementById('ingest-file').click()">
+          <div class="di">📚</div>
+          <p><strong>Click or drag</strong> to upload a PDF or document</p>
+          <p style="margin-top:4px">Supports: PDF, DOCX, TXT — up to 200MB</p>
+          <div id="ingest-preview" style="margin-top:8px;font-size:12px;color:var(--teal)"></div>
+        </div>
+        <input type="file" id="ingest-file" style="display:none"
+          accept=".pdf,.docx,.txt" onchange="handleIngestFile(this)">
+
+        <div style="margin-top:14px">
+          <div class="form-group">
+            <label>Document type</label>
+            <select id="ingest-doc-type" onchange="toggleStandardsFields(this.value)">
+              <option value="marzano_reference">Marzano reference — general knowledge base</option>
+              <option value="standards">State / grade standards document</option>
+            </select>
+          </div>
+          <div id="standards-fields" style="display:none">
+            <div class="form-row">
+              <div class="form-group">
+                <label>State</label>
+                <input id="ingest-state" placeholder="e.g. California" list="ingest-states-list">
+                <datalist id="ingest-states-list">
+                  <option value="Alabama"><option value="Alaska"><option value="Arizona">
+                  <option value="Arkansas"><option value="California"><option value="Colorado">
+                  <option value="Connecticut"><option value="Delaware"><option value="Florida">
+                  <option value="Georgia"><option value="Hawaii"><option value="Idaho">
+                  <option value="Illinois"><option value="Indiana"><option value="Iowa">
+                  <option value="Kansas"><option value="Kentucky"><option value="Louisiana">
+                  <option value="Maine"><option value="Maryland"><option value="Massachusetts">
+                  <option value="Michigan"><option value="Minnesota"><option value="Mississippi">
+                  <option value="Missouri"><option value="Montana"><option value="Nebraska">
+                  <option value="Nevada"><option value="New Hampshire"><option value="New Jersey">
+                  <option value="New Mexico"><option value="New York"><option value="North Carolina">
+                  <option value="North Dakota"><option value="Ohio"><option value="Oklahoma">
+                  <option value="Oregon"><option value="Pennsylvania"><option value="Rhode Island">
+                  <option value="South Carolina"><option value="South Dakota"><option value="Tennessee">
+                  <option value="Texas"><option value="Utah"><option value="Vermont">
+                  <option value="Virginia"><option value="Washington"><option value="West Virginia">
+                  <option value="Wisconsin"><option value="Wyoming">
+                </datalist>
+              </div>
+              <div class="form-group">
+                <label>Grade band</label>
+                <select id="ingest-grade-band">
+                  <option value="">All grades</option>
+                  <option value="elementary_k2">Early Elementary (K–2)</option>
+                  <option value="elementary_3_5">Upper Elementary (3–5)</option>
+                  <option value="middle_6_8">Middle School (6–8)</option>
+                  <option value="high_9_10">High School Early (9–10)</option>
+                  <option value="high_11_12">High School Advanced (11–12)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Subject area (optional — leave blank to apply to all subjects)</label>
+              <input id="ingest-subject-area" placeholder="e.g. Mathematics, Science, ELA">
+            </div>
+            <div style="font-size:11px;color:var(--muted);padding:8px 0">
+              These tags allow the AI to retrieve only standards relevant to each student's
+              grade and subject when generating feedback.
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn btn-primary" id="ingest-btn" onclick="startIngestion()" disabled>
+            Index Document
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Indexing Jobs</div>
+        <div id="jobs-list"><p style="color:var(--muted);font-size:13px">No jobs yet.</p></div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="panel-notifications" class="panel">
+      <div class="page-hdr">
+        <div><h2>Notifications</h2><p>System events and assessment activity.</p></div>
+        <button class="btn btn-secondary" onclick="markAllRead()">Mark all read</button>
+      </div>
+      <div id="notif-list"></div>
+    </div>
+
+    <!-- International Classroom -->
+    <div id="panel-international" class="panel">
+      <div class="page-hdr">
+        <div><h2>International Classrooms</h2><p>Grade equivalencies and Marzano ↔ international framework mappings.</p></div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">Look up a grade level</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>US Grade</label>
+            <select id="intl-grade-sel" onchange="lookupGrade(this.value)">
+              <option value="">Select US grade…</option>
+              <option>Kindergarten</option>
+              <option>Grade 1</option><option>Grade 2</option><option>Grade 3</option>
+              <option>Grade 4</option><option>Grade 5</option><option>Grade 6</option>
+              <option>Grade 7</option><option>Grade 8</option><option>Grade 9</option>
+              <option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Marzano Level</label>
+            <select id="intl-level-sel" onchange="lookupMarzano(this.value)">
+              <option value="">Select level…</option>
+              <option value="retrieval">Cognitive: Retrieval</option>
+              <option value="comprehension">Cognitive: Comprehension</option>
+              <option value="analysis">Cognitive: Analysis</option>
+              <option value="knowledge_utilization">Cognitive: Knowledge Utilization</option>
+              <option value="metacognitive">Metacognitive System</option>
+              <option value="self_system">Self System</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="intl-grade-result" style="display:none" class="card">
+        <div class="card-title" id="intl-grade-title">Grade equivalencies</div>
+        <div id="intl-grade-table"></div>
+      </div>
+
+      <div id="intl-marzano-result" style="display:none" class="card">
+        <div class="card-title" id="intl-marzano-title">International framework equivalencies</div>
+        <div id="intl-marzano-table"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">All countries</div>
+        <div id="intl-countries-grid"></div>
+      </div>
+    </div>
+
+    <!-- Taxonomy Reference -->
+    <div id="panel-taxonomy" class="panel">
+      <div class="page-hdr"><div><h2>Taxonomy Reference</h2><p>All levels and sublevels used in feedback.</p></div></div>
+      <div class="tax-grid" id="tax-ref"></div>
+    </div>
+
+  </div>
+  </main>
+</div>
+
+<script>
+const API = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '/api';
+let currentAssessmentId = null;
+let ingestFileData = null;
+let unreadCount = 0;
+let activeJobs = {};  // job_id → progress bar el
+
+// ─── Nav ───
+function nav(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  const nb = document.getElementById('nav-' + name);
+  if (nb) nb.classList.add('active');
+}
+
+// ─── SSE connection ───
+function connectSSE() {
+  const dot = document.getElementById('sse-dot');
+  const label = document.getElementById('sse-label');
+
+  const es = new EventSource(`${API}/notifications/stream`);
+
+  es.addEventListener('connected', () => {
+    dot.className = 'sse-dot connected';
+    label.textContent = 'Live — receiving notifications';
+    checkRagStatus();
+  });
+
+  es.addEventListener('ingestion_started', e => {
+    const d = JSON.parse(e.data);
+    showToast('📄', 'Indexing started', d.body || d.title, 'info', 5000);
+    updateJobProgress(d.payload?.job_id, 0);
+  });
+
+  es.addEventListener('ingestion_progress', e => {
+    const d = JSON.parse(e.data);
+    const p = d.payload || {};
+    updateJobProgress(p.job_id, p.progress || 0, p.chunks_done, p.chunks_total);
+    // Update inline progress toast
+    showToast('⚙️', d.title, d.body, 'info', 3000);
+  });
+
+  es.addEventListener('ingestion_complete', e => {
+    const d = JSON.parse(e.data);
+    showToast('✅', d.title, d.body, 'success', 8000);
+    updateJobProgress(d.payload?.job_id, 100);
+    loadJobs();
+    checkRagStatus();
+    bumpUnread();
+  });
+
+  es.addEventListener('assessment_ready', e => {
+    const d = JSON.parse(e.data);
+    showToast('🎓', d.title, d.body, 'info', 8000);
+    loadSidebar();
+    bumpUnread();
+  });
+
+  es.addEventListener('assessment_approved', e => {
+    const d = JSON.parse(e.data);
+    showToast('✓', d.title, d.body, 'success', 6000);
+    bumpUnread();
+  });
+
+  es.addEventListener('error', e => {
+    const d = e.data ? JSON.parse(e.data) : {};
+    showToast('⚠️', d.title || 'Error', d.body || 'An error occurred.', 'error', 8000);
+    bumpUnread();
+  });
+
+  es.onerror = () => {
+    dot.className = 'sse-dot';
+    label.textContent = 'Reconnecting…';
+    setTimeout(connectSSE, 5000);
+    es.close();
+  };
+}
+
+// ─── Toasts ───
+const TOAST_ICONS = { success: '✅', info: '💬', error: '⚠️' };
+
+function showToast(icon, title, msg, type = 'info', duration = 5000) {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-body">
+      <div class="toast-title">${esc(title)}</div>
+      <div class="toast-msg">${esc(msg)}</div>
+    </div>
+    <div class="toast-close" onclick="removeToast(this.parentElement)">×</div>
+  `;
+  container.appendChild(el);
+
+  if (container.children.length > 5) container.firstChild.remove();
+
+  setTimeout(() => removeToast(el), duration);
+}
+
+function removeToast(el) {
+  if (!el || !el.parentElement) return;
+  el.classList.add('hiding');
+  setTimeout(() => el.remove(), 300);
+}
+
+// ─── Unread badge ───
+function bumpUnread() {
+  unreadCount++;
+  const badge = document.getElementById('notif-badge');
+  badge.style.display = 'flex';
+  badge.textContent = unreadCount;
+}
+
+function clearUnread() {
+  unreadCount = 0;
+  document.getElementById('notif-badge').style.display = 'none';
+}
+
+// ─── Curriculum selectors ───
+let _curriculumCache = null;
+
+async function loadSubjects(bandId) {
+  const gradeSel   = document.getElementById('grade_level_sel');
+  const subjectSel = document.getElementById('subject_sel');
+  const hiddenBand = document.getElementById('grade_band_hidden');
+  if (hiddenBand) hiddenBand.value = bandId;
+
+  if (!bandId) {
+    gradeSel.innerHTML   = '<option value="">Select grade band first…</option>';
+    subjectSel.innerHTML = '<option value="">Select grade band first…</option>';
+    return;
+  }
+
+  // Populate grade levels immediately from known data
+  const BAND_GRADES = {
+    elementary_k2: ['Kindergarten','Grade 1','Grade 2'],
+    elementary_3_5: ['Grade 3','Grade 4','Grade 5'],
+    middle_6_8: ['Grade 6','Grade 7','Grade 8'],
+    high_9_10: ['Grade 9','Grade 10'],
+    high_11_12: ['Grade 11','Grade 12'],
+  };
+  const grades = BAND_GRADES[bandId] || [];
+  gradeSel.innerHTML = '<option value="">Select grade…</option>' +
+    grades.map(g => `<option>${g}</option>`).join('');
+
+  // Load subjects from API
+  try {
+    if (!_curriculumCache) {
+      const res = await fetch(`${API}/curriculum`);
+      _curriculumCache = await res.json();
+    }
+    const subjects = (_curriculumCache.subjects || {})[bandId] || [];
+    subjectSel.innerHTML = '<option value="">Select subject…</option>' +
+      subjects.map(s => `<option value="${esc(s.name)}" data-target="${s.marzano_target}" data-strands="${esc(s.strands.join(', '))}" data-passions="${s.common_passions.join(',')}">${esc(s.name)}</option>`).join('');
+  } catch {
+    subjectSel.innerHTML = '<option value="">Could not load subjects</option>';
+  }
+}
+
+function onSubjectChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) {
+    document.getElementById('subject-hint').textContent = '';
+    return;
+  }
+  const target  = opt.dataset.target || '';
+  const strands = opt.dataset.strands || '';
+  const passions = (opt.dataset.passions || '').split(',').filter(Boolean);
+  document.getElementById('subject-hint').textContent =
+    (target ? `Marzano target: ${target.replace(/_/g,' ')}` : '') +
+    (strands ? ` · Strands: ${strands}` : '');
+  // Suggest first matching passion
+  const passionSel = document.getElementById('passion_sel');
+  if (passions.length && passionSel && !passionSel.value) {
+    const match = Array.from(passionSel.options).find(o => passions.includes(o.value));
+    if (match) { passionSel.value = match.value; updateHint(passionSel); }
+  }
+}
+
+function toggleStandardsFields(val) {
+  const el = document.getElementById('standards-fields');
+  if (el) el.style.display = val === 'standards' ? 'block' : 'none';
+}
+
+// ─── Country / international ───
+async function onCountryChange(code) {
+  const gradeGroup = document.getElementById('local-grade-group');
+  const hint       = document.getElementById('local-grade-hint');
+  if (!code) {
+    gradeGroup.style.display = 'none';
+    return;
+  }
+  gradeGroup.style.display = 'block';
+  // Look up the current US grade equivalent in the selected country
+  const gradeSel = document.getElementById('grade_level_sel');
+  const usGrade  = gradeSel?.value;
+  if (usGrade) {
+    try {
+      const r = await fetch(`${API}/international/grades/${encodeURIComponent(usGrade)}`);
+      if (r.ok) {
+        const data = await r.json();
+        const equiv = data.equivalents[code];
+        if (equiv) hint.textContent = `Equivalent: ${equiv}`;
+      }
+    } catch { }
+  }
+  // Pre-fill local grade if we can
+  const input = document.getElementById('local_grade_input');
+  if (input && !input.value && usGrade) {
+    try {
+      const r = await fetch(`${API}/international/grades/${encodeURIComponent(usGrade)}`);
+      if (r.ok) {
+        const data = await r.json();
+        if (data.equivalents[code]) input.value = data.equivalents[code].split(' (')[0];
+      }
+    } catch { }
+  }
+}
+
+// ─── Passion hint ───
+const HINTS = {
+  architecture: 'geometry · ratios · structural load · trig',
+  astronomy: 'scientific notation · scale · orbital mechanics',
+  barrel_making: 'volume · surface area · ratios',
+  photography: 'ratios · fractions · depth of field',
+  music: 'fractions · frequency · wave patterns',
+  cooking: 'ratios · scaling · measurement',
+};
+function updateHint(sel) {
+  document.getElementById('passion-hint').textContent = HINTS[sel.value] || '';
+}
+
+// ─── File preview ───
+function previewFile(input) {
+  const el = document.getElementById('file-preview');
+  if (input.files.length) {
+    const f = input.files[0];
+    const isVideo = f.type.startsWith('video/');
+    el.textContent = `${isVideo ? '🎬' : '📎'} ${f.name} (${(f.size/1024).toFixed(0)} KB)`;
+  }
+}
+const az = document.getElementById('az');
+az.addEventListener('dragover', e => { e.preventDefault(); az.classList.add('dragover'); });
+az.addEventListener('dragleave', () => az.classList.remove('dragover'));
+az.addEventListener('drop', e => {
+  e.preventDefault(); az.classList.remove('dragover');
+  const fi = document.getElementById('af');
+  if (e.dataTransfer.files.length) { fi.files = e.dataTransfer.files; previewFile(fi); }
+});
+
+// ─── Submit assessment ───
+async function submitAssessment(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const alert = document.getElementById('submit-alert');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Generating assessment…';
+  alert.style.display = 'none';
+
+  try {
+    const fd = new FormData(document.getElementById('assess-form'));
+    // Append hidden fields that aren't native form controls
+    const band = document.getElementById('grade_band_hidden');
+    if (band) fd.set('grade_band', band.value || '');
+    const stateEl = document.querySelector('[name="student_state"]');
+    if (stateEl) fd.set('student_state', stateEl.value || '');
+    const res = await fetch(`${API}/assess`, { method: 'POST', body: fd });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Server error'); }
+    const data = await res.json();
+    await loadReview(data.assessment_id);
+    nav('review');
+    loadSidebar();
+  } catch(err) {
+    alert.className = 'alert alert-error';
+    alert.textContent = '⚠ ' + err.message;
+    alert.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Generate Marzano Assessment';
+  }
+}
+
+// ─── Load assessment list ───
+async function loadList() {
+  const c = document.getElementById('list-content');
+  c.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading…</p>';
+  try {
+    const res = await fetch(`${API}/assessments`);
+    const list = await res.json();
+    if (!list.length) { c.innerHTML = '<div class="empty"><h3>No assessments yet</h3><p>Submit your first artifact using New Assessment.</p></div>'; return; }
+    c.innerHTML = '<div class="assess-grid">' + list.map(a => `
+      <div class="assess-row" onclick="loadReview('${a.id}');nav('review')">
+        <div class="ar-main">
+          <div class="ar-name">${esc(a.student_name)}</div>
+          <div class="ar-meta">${esc(a.subject)} · ${esc(a.grade_level)} · ${esc(a.passion)} · ${fmtDate(a.created_at)}</div>
+        </div>
+        <div class="ar-badges">
+          ${a.submitted_by === 'student' ? '<span class="badge badge-student">Student</span>' : ''}
+          ${a.has_video ? '<span class="badge badge-video">🎬 Video</span>' : ''}
+          <span class="badge badge-level">${esc(a.overall_level)}</span>
+          <span class="badge ${a.approved ? 'badge-approved' : 'badge-draft'}">${a.approved ? 'Approved' : 'Draft'}</span>
+        </div>
+      </div>`).join('') + '</div>';
+  } catch { c.innerHTML = '<div class="alert alert-error">Cannot connect to backend.</div>'; }
+}
+
+// ─── Load sidebar recent list ───
+async function loadSidebar() {
+  try {
+    const res = await fetch(`${API}/assessments`);
+    const list = await res.json();
+    const el = document.getElementById('recent-list');
+    el.innerHTML = list.slice(0, 10).map(a => `
+      <div class="recent-item" onclick="loadReview('${a.id}');nav('review')">
+        <div class="recent-name">${esc(a.student_name)}</div>
+        <div class="recent-meta">
+          <span>${esc(a.grade_level)}</span>
+          ${a.submitted_by === 'student' ? '<span class="badge badge-student">S</span>' : ''}
+          <span class="badge ${a.approved ? 'badge-approved' : 'badge-draft'}" style="margin-left:auto">${a.approved ? '✓' : 'Draft'}</span>
+        </div>
+      </div>`).join('');
+  } catch {}
+}
+
+// ─── Load & render one assessment ───
+async function loadReview(id) {
+  currentAssessmentId = id;
+  const alert = document.getElementById('review-alert');
+  alert.style.display = 'none';
+  try {
+    const res = await fetch(`${API}/assessments/${id}`);
+    if (!res.ok) throw new Error('Not found');
+    const d = await res.json();
+    const f = d.feedback || {};
+
+    document.getElementById('rv-title').textContent = `${d.student_name} — ${d.subject}`;
+    document.getElementById('rv-meta').textContent =
+      `${d.grade_level} · ${d.student_passion} · ${d.submitted_by === 'student' ? '👤 Student submission · ' : ''}${d.country_code ? '🌐 ' + d.country_code + (d.local_grade ? ' (' + d.local_grade + ')' : '') + ' · ' : ''}${fmtDate(d.created_at)}${d.has_video ? ' · 🎬 Video' : ''}`;
+    document.getElementById('rv-badge').textContent = `${f.overall_level || '?'} — ${f.overall_sublevel || ''}`;
+    document.getElementById('rv-strengths').textContent = f.strength_summary || '—';
+    document.getElementById('rv-growth').textContent = f.growth_summary || '—';
+    document.getElementById('rv-next').textContent = f.next_level_prompt || '—';
+    document.getElementById('rv-passion').textContent = f.passion_integration || '—';
+    document.getElementById('rv-reasoning').textContent = f.ai_reasoning || '—';
+    const stds = (f.standards_cited || []).filter(Boolean);
+    const stdsWrap = document.getElementById('rv-standards-wrap');
+    if (stds.length) {
+      document.getElementById('rv-standards').textContent = stds.join(' · ');
+      stdsWrap.style.display = 'block';
+    } else {
+      stdsWrap.style.display = 'none';
+    }
+    document.getElementById('tc-comments').value = d.teacher_comments || '';
+    document.getElementById('tc-level').value = d.teacher_edited_level || '';
+
+    const bd = document.getElementById('rv-breakdown');
+    bd.innerHTML = (f.taxonomy_breakdown || []).map(item => `
+      <div class="taxonomy-item">
+        <div class="taxonomy-hdr ${sysClass(item.system)}">
+          <div>
+            <div class="tx-sys">${esc(item.system)}</div>
+            <div class="tx-lvl">${esc(item.level)}</div>
+            <div class="tx-sub">${esc(item.sublevel)}</div>
+          </div>
+          <span class="rating-pill ${rClass(item.rating)}">${esc(item.rating)}</span>
+        </div>
+        <div class="taxonomy-body"><strong>Evidence</strong>${esc(item.evidence)}</div>
+      </div>`).join('') || '<p style="color:var(--muted);font-size:13px">No breakdown available.</p>';
+
+    // FEATURE 1: Display Original AI Draft
+    const draftCard = document.getElementById('original-draft-card');
+    if (d.original_ai_draft) {
+      draftCard.style.display = 'block';
+      document.getElementById('original-draft-content').textContent = d.original_ai_draft;
+    } else {
+      draftCard.style.display = 'none';
+    }
+
+    // FEATURE 2: Display Standards Alignment (Competency Assessment)
+    const competencyCard = document.getElementById('competency-card');
+    if (d.competency_assessment) {
+      const ca = d.competency_assessment;
+      competencyCard.style.display = 'block';
+      
+      // Evidence of standards
+      const evidenceList = document.getElementById('competency-evidence');
+      if (ca.standards_evidence && Array.isArray(ca.standards_evidence)) {
+        evidenceList.innerHTML = ca.standards_evidence.map(e => `<li>${esc(e)}</li>`).join('');
+      } else {
+        evidenceList.innerHTML = '<li style="color:var(--muted)">No evidence recorded.</li>';
+      }
+      
+      // Grade alignment
+      document.getElementById('competency-alignment').textContent = ca.grade_alignment || '—';
+      
+      // Competency areas
+      const areasUl = document.getElementById('competency-areas');
+      if (ca.competency_areas && Array.isArray(ca.competency_areas)) {
+        areasUl.innerHTML = ca.competency_areas.map(a => `<li>${esc(a)}</li>`).join('');
+      } else {
+        areasUl.innerHTML = '<li style="color:var(--muted)">No competencies identified.</li>';
+      }
+      
+      // Growth recommendations
+      const growthUl = document.getElementById('competency-growth');
+      if (ca.growth_recommendations && Array.isArray(ca.growth_recommendations)) {
+        growthUl.innerHTML = ca.growth_recommendations.map(g => `<li>${esc(g)}</li>`).join('');
+      } else {
+        growthUl.innerHTML = '<li style="color:var(--muted)">No recommendations.</li>';
+      }
+      
+      // Rigor analysis
+      document.getElementById('competency-rigor').textContent = ca.rigor_analysis || '—';
+      
+      // Teacher notes
+      document.getElementById('competency-notes').textContent = ca.teacher_notes || '—';
+    } else {
+      competencyCard.style.display = 'none';
+    }
+  } catch(err) {
+    alert.className = 'alert alert-error';
+    alert.textContent = '⚠ ' + err.message;
+    alert.style.display = 'block';
+  }
+}
+
+// ─── Save teacher edits ───
+async function saveAssessment(approved) {
+  const alert = document.getElementById('review-alert');
+  if (!currentAssessmentId) return;
+  try {
+    const res = await fetch(`${API}/assessments/${currentAssessmentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        assessment_id: currentAssessmentId,
+        teacher_comments: document.getElementById('tc-comments').value,
+        edited_level: document.getElementById('tc-level').value || null,
+        approved,
+      }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    alert.className = 'alert alert-success';
+    alert.textContent = approved ? '✓ Approved and saved.' : '✓ Draft saved.';
+    alert.style.display = 'block';
+    loadSidebar();
+    setTimeout(() => { alert.style.display = 'none'; }, 3000);
+  } catch(err) {
+    alert.className = 'alert alert-error';
+    alert.textContent = '⚠ ' + err.message;
+    alert.style.display = 'block';
+  }
+}
+
+// ─── Ingestion ───
+let ingestBlob = null;
+function handleIngestFile(input) {
+  if (!input.files.length) return;
+  ingestBlob = input.files[0];
+  document.getElementById('ingest-preview').textContent =
+    `📄 ${ingestBlob.name} (${(ingestBlob.size/1024).toFixed(0)} KB)`;
+  document.getElementById('ingest-btn').disabled = false;
+}
+const id = document.getElementById('ingest-drop');
+id.addEventListener('dragover', e => { e.preventDefault(); id.classList.add('dragover'); });
+id.addEventListener('dragleave', () => id.classList.remove('dragover'));
+id.addEventListener('drop', e => {
+  e.preventDefault(); id.classList.remove('dragover');
+  const fi = document.getElementById('ingest-file');
+  if (e.dataTransfer.files.length) { fi.files = e.dataTransfer.files; handleIngestFile(fi); }
+});
+
+async function startIngestion() {
+  if (!ingestBlob) return;
+  const btn = document.getElementById('ingest-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Starting…';
+
+  const docType    = document.getElementById('ingest-doc-type')?.value || 'marzano_reference';
+  const state      = document.getElementById('ingest-state')?.value || '';
+  const gradeBand  = document.getElementById('ingest-grade-band')?.value || '';
+  const subjectArea= document.getElementById('ingest-subject-area')?.value || '';
+
+  // Validate standards docs have at least state
+  if (docType === 'standards' && !state.trim()) {
+    showToast('⚠️', 'State required', 'Please enter a state for standards documents.', 'error', 5000);
+    btn.disabled = false;
+    btn.innerHTML = 'Index Document';
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append('file', ingestBlob);
+  fd.append('doc_type', docType);
+  fd.append('state', state);
+  fd.append('grade_band', gradeBand);
+  fd.append('subject_area', subjectArea);
+
+  try {
+    const res = await fetch(`${API}/ingest`, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error('Upload failed');
+    const data = await res.json();
+    const label = docType === 'standards'
+      ? `${data.filename} [${[state, gradeBand, subjectArea].filter(Boolean).join(' · ')}]`
+      : data.filename;
+    addJobRow(data.job_id, label, 0);
+    btn.innerHTML = 'Index Document';
+    document.getElementById('ingest-preview').textContent = '';
+    ingestBlob = null;
+    document.getElementById('ingest-file').value = '';
+    // Reset tag fields
+    if (document.getElementById('ingest-state')) document.getElementById('ingest-state').value = '';
+    if (document.getElementById('ingest-grade-band')) document.getElementById('ingest-grade-band').value = '';
+    if (document.getElementById('ingest-subject-area')) document.getElementById('ingest-subject-area').value = '';
+  } catch(err) {
+    showToast('⚠️', 'Upload failed', err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function addJobRow(jobId, filename, progress) {
+  const c = document.getElementById('jobs-list');
+  if (c.querySelector('p')) c.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'job-row';
+  row.id = `job-${jobId}`;
+  row.innerHTML = `
+    <div class="jr-top">
+      <span class="job-filename">${esc(filename)}</span>
+      <span class="badge badge-processing" id="job-status-${jobId}">Processing</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="job-bar-${jobId}" style="width:${progress}%"></div></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:5px" id="job-msg-${jobId}">Starting…</div>`;
+  c.prepend(row);
+  activeJobs[jobId] = true;
+}
+
+function updateJobProgress(jobId, pct, done, total) {
+  if (!jobId) return;
+  const bar = document.getElementById(`job-bar-${jobId}`);
+  const msg = document.getElementById(`job-msg-${jobId}`);
+  const status = document.getElementById(`job-status-${jobId}`);
+  if (bar) bar.style.width = pct + '%';
+  if (msg && done !== undefined) msg.textContent = `${done}/${total} chunks`;
+  if (status && pct >= 100) {
+    status.textContent = 'Complete';
+    status.className = 'badge badge-complete';
+    delete activeJobs[jobId];
+  }
+}
+
+async function loadJobs() {
+  try {
+    const res = await fetch(`${API}/ingest/jobs`);
+    const jobs = await res.json();
+    const c = document.getElementById('jobs-list');
+    if (!jobs.length) { c.innerHTML = '<p style="color:var(--muted);font-size:13px">No jobs yet.</p>'; return; }
+    c.innerHTML = jobs.map(j => {
+      const tags = [j.doc_type === 'standards' ? 'Standards' : 'Reference', j.state, j.grade_band, j.subject_area].filter(Boolean);
+      const pct  = j.status === 'complete' ? 100 : j.chunks_total ? Math.round(j.chunks_done / j.chunks_total * 100) : 0;
+      return `
+      <div class="job-row">
+        <div class="jr-top">
+          <span class="job-filename">${esc(j.filename)}</span>
+          <span class="badge badge-${j.status === 'complete' ? 'complete' : j.status === 'error' ? 'error' : 'processing'}">${j.status}</span>
+        </div>
+        ${tags.length > 1 ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">${tags.map(t => `<span style="background:var(--bg);border:0.5px solid var(--border);border-radius:4px;padding:1px 6px;margin-right:4px">${esc(t)}</span>`).join('')}</div>` : ''}
+        <div class="progress-bar" style="margin-top:6px"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">
+          ${j.chunks_total ? `${j.chunks_done}/${j.chunks_total} chunks` : ''}
+          ${j.error_message ? `<span style="color:var(--coral)"> — ${esc(j.error_message)}</span>` : ''}
+          · ${fmtDate(j.created_at)}
+        </div>
+      </div>`;
+    }).join('');
+  } catch {}
+}
+
+async function checkRagStatus() {
+  try {
+    const res = await fetch(`${API}/ingest/status`);
+    const d = await res.json();
+    const el = document.getElementById('rag-status-badge');
+    const badge = document.getElementById('rag-badge');
+    if (d.index_loaded) {
+      el.textContent = `✓ ${d.doc_count} chunks indexed`;
+      el.style.color = 'var(--teal)';
+      badge.style.display = 'flex';
+    } else {
+      el.textContent = 'No index yet — upload documents below';
+    }
+  } catch {}
+}
+
+// ─── Notifications ───
+async function loadNotifications() {
+  const c = document.getElementById('notif-list');
+  c.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading…</p>';
+  clearUnread();
+  try {
+    const res = await fetch(`${API}/notifications`);
+    const list = await res.json();
+    if (!list.length) { c.innerHTML = '<div class="empty"><h3>No notifications yet</h3><p>Indexing and assessment events appear here.</p></div>'; return; }
+    c.innerHTML = list.map(n => `
+      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="markRead('${n.id}', this)">
+        <div class="notif-icon">${notifIcon(n.type)}</div>
+        <div>
+          <div class="notif-title">${esc(n.title)}</div>
+          <div class="notif-body">${esc(n.body)}</div>
+          <div class="notif-time">${fmtDate(n.created_at)}</div>
+        </div>
+      </div>`).join('');
+  } catch { c.innerHTML = '<div class="alert alert-error">Could not load notifications.</div>'; }
+}
+
+async function markRead(id, el) {
+  try {
+    await fetch(`${API}/notifications/${id}/read`, { method: 'PATCH' });
+    el.classList.remove('unread');
+  } catch {}
+}
+
+async function markAllRead() {
+  try {
+    await fetch(`${API}/notifications/mark-all-read`, { method: 'POST' });
+    document.querySelectorAll('.notif-row').forEach(r => r.classList.remove('unread'));
+    clearUnread();
+  } catch {}
+}
+
+function notifIcon(type) {
+  return { ingestion_complete: '📚', ingestion_started: '📄', ingestion_progress: '⚙️',
+           assessment_ready: '🎓', assessment_approved: '✓', error: '⚠️' }[type] || '💬';
+}
+
+// ─── Taxonomy reference ───
+const TAX_COLORS = {
+  self_system: 'th-self', metacognitive: 'th-meta', retrieval: 'th-ret',
+  comprehension: 'th-comp', analysis: 'th-anal', knowledge_utilization: 'th-util'
+};
+async function loadTaxRef() {
+  const c = document.getElementById('tax-ref');
+  if (c.children.length > 0) return;
+  try {
+    const res = await fetch(`${API}/taxonomy`);
+    const tax = await res.json();
+    c.innerHTML = Object.entries(tax).map(([k, lv]) => `
+      <div class="tax-card">
+        <div class="tax-hdr ${TAX_COLORS[k] || ''}">${esc(lv.name)}${lv.bloom_equivalent ? ` <span style="font-weight:400;font-size:10px">≈ Bloom: ${lv.bloom_equivalent}</span>` : ''}</div>
+        ${lv.sublevels.map(s => `<div class="tax-sub"><h4>${esc(s.name)}</h4><div class="verbs">${s.verbs.slice(0,5).join(' · ')}</div></div>`).join('')}
+      </div>`).join('');
+  } catch { c.innerHTML = '<div class="alert alert-error">Could not load taxonomy.</div>'; }
+}
+
+// ─── Helpers ───
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(iso) { return new Date(iso).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+function sysClass(s) {
+  if (!s) return '';
+  const sl = s.toLowerCase();
+  if (sl.includes('self')) return 'sys-self';
+  if (sl.includes('meta')) return 'sys-meta';
+  return 'sys-cog';
+}
+function rClass(r) {
+  return { advanced:'r-advanced', proficient:'r-proficient', developing:'r-developing', emerging:'r-emerging' }[(r||'').toLowerCase()] || 'r-not';
+}
+
+// FEATURE 1: Toggle Original AI Draft visibility
+function toggleOriginalDraft() {
+  const content = document.getElementById('original-draft-content');
+  const btnText = document.getElementById('draft-toggle-text');
+  const isHidden = content.style.display === 'none';
+  
+  if (isHidden) {
+    content.style.display = 'block';
+    btnText.textContent = 'Hide Original Draft';
+  } else {
+    content.style.display = 'none';
+    btnText.textContent = 'Show Original Draft';
+  }
+}
+
+// ─── International ───
+let _intlCache = null;
+
+async function loadInternational() {
+  if (_intlCache) { renderCountries(_intlCache); return; }
+  try {
+    const r = await fetch(`${API}/international`);
+    _intlCache = await r.json();
+    renderCountries(_intlCache);
+  } catch { }
+}
+
+function renderCountries(data) {
+  const grid = document.getElementById('intl-countries-grid');
+  if (!grid || !data.countries) return;
+  const countries = Object.values(data.countries);
+  grid.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+      ${countries.map(c => `
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:12px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">${esc(c.name)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${esc(c.education_system)}</div>
+          <div style="font-size:11px;color:var(--muted)">${esc(c.grade_terminology)}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function lookupGrade(grade) {
+  if (!grade) { document.getElementById('intl-grade-result').style.display = 'none'; return; }
+  try {
+    const r = await fetch(`${API}/international/grades/${encodeURIComponent(grade)}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    document.getElementById('intl-grade-title').textContent = `Equivalents for ${grade}`;
+    const rows = Object.entries(data.equivalents).map(([code, equiv]) => `
+      <tr>
+        <td style="padding:6px 10px;font-weight:600;font-size:12px;color:var(--muted);white-space:nowrap">${esc(code)}</td>
+        <td style="padding:6px 10px;font-size:13px">${esc(equiv)}</td>
+      </tr>`).join('');
+    document.getElementById('intl-grade-table').innerHTML = `
+      <table style="width:100%;border-collapse:collapse">${rows}</table>`;
+    document.getElementById('intl-grade-result').style.display = 'block';
+  } catch { }
+}
+
+async function lookupMarzano(level) {
+  if (!level) { document.getElementById('intl-marzano-result').style.display = 'none'; return; }
+  try {
+    const r = await fetch(`${API}/international/marzano/${level}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const FRAMEWORK_LABELS = {
+      GB: 'UK (England)', AU: 'Australia (ACARA)', IB_MYP: 'IB Middle Years',
+      IB_DP: 'IB Diploma', FR: 'France', DE: 'Germany', PISA: 'PISA',
+      TIMSS: 'TIMSS', description: null,
+    };
+    document.getElementById('intl-marzano-title').textContent =
+      `${level.replace(/_/g,' ')} — international equivalencies`;
+    const rows = Object.entries(data.mapping)
+      .filter(([k]) => k !== 'description')
+      .map(([code, text]) => `
+        <tr>
+          <td style="padding:6px 10px;font-weight:600;font-size:12px;color:var(--muted);white-space:nowrap">${esc(FRAMEWORK_LABELS[code] || code)}</td>
+          <td style="padding:6px 10px;font-size:13px">${esc(text)}</td>
+        </tr>`).join('');
+    document.getElementById('intl-marzano-table').innerHTML =
+      `<div style="font-size:12px;color:var(--muted);padding:0 0 10px">${esc(data.mapping.description || '')}</div>` +
+      `<table style="width:100%;border-collapse:collapse">${rows}</table>`;
+    document.getElementById('intl-marzano-result').style.display = 'block';
+  } catch { }
+}
+
+// ─── Init ───
+connectSSE();
+loadSidebar();
+</script>
+</body>
+</html>
