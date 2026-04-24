@@ -570,6 +570,21 @@ async def create_assessment(
         "ai_reasoning": "JSON extraction failed — raw response shown",
     }
 
+    # FEATURE 1: Store original AI draft (immutable)
+    original_draft = raw
+
+    # FEATURE 2: Generate teacher-only competency assessment
+    # This analyzes evidence of meeting state standards (visible ONLY to teachers)
+    competency_assessment = await _generate_competency_assessment(
+        artifact_description=full_description,
+        subject=subject,
+        grade_level=grade_level,
+        student_reflection=student_reflection,
+        feedback=feedback,
+        country_code=country_code,
+        curriculum_context=curriculum_ctx,
+    )
+
     record = Assessment(
         id=assessment_id,
         student_name=student_name,
@@ -585,6 +600,8 @@ async def create_assessment(
         artifact_filename=artifact_filename,
         feedback=feedback,
         raw_ai_response=raw,
+        original_ai_draft=original_draft,  # NEW: Store original draft
+        competency_assessment=competency_assessment,  # NEW: Store competency assessment
         submitted_by=submitted_by,
     )
     session.add(record)
@@ -652,7 +669,8 @@ async def get_one_assessment(
     record = await get_assessment(session, assessment_id)
     if not record:
         raise HTTPException(status_code=404, detail="Not found")
-    return _assessment_to_dict(record)
+    # Teachers can see all fields including competency_assessment and original_ai_draft
+    return _assessment_to_dict(record, include_teacher_data=True)
 
 
 class TeacherEdit(BaseModel):
@@ -754,6 +772,96 @@ async def student_check_status(
 # ─────────────────────────────────────────────────────────────
 # Internal helpers
 # ─────────────────────────────────────────────────────────────
+async def _generate_competency_assessment(
+    artifact_description: str,
+    subject: str,
+    grade_level: str,
+    student_reflection: Optional[str],
+    feedback: dict,
+    country_code: Optional[str] = None,
+    curriculum_context: Optional[str] = None,
+) -> dict:
+    """
+    FEATURE 2: Generate teacher-only competency assessment.
+    
+    This parallel AI analysis identifies specific evidence of competency
+    regarding state standards. Output is visible ONLY to teachers.
+    
+    Returns a dict with:
+      - standards_evidence: Specific evidence of meeting state standards
+      - grade_alignment: How well artifact meets grade-level expectations
+      - competency_areas: Key areas of demonstrated competency
+      - growth_recommendations: Targeted recommendations for growth
+    """
+    try:
+        # Build competency-specific prompt
+        competency_prompt = f"""
+You are an expert educator analyzing student work for evidence of competency against state standards.
+
+SUBJECT: {subject}
+GRADE LEVEL: {grade_level}
+{f'COUNTRY: {country_code}' if country_code else 'COUNTRY: United States'}
+
+STUDENT ARTIFACT:
+{artifact_description[:1500]}
+
+{f'STUDENT REFLECTION:\\n{student_reflection}' if student_reflection else ''}
+
+CURRICULUM CONTEXT:
+{curriculum_context or 'Standard US curriculum framework'}
+
+PREVIOUS AI FEEDBACK:
+Overall Level: {feedback.get('overall_level', 'Unknown')}
+Strengths: {feedback.get('strength_summary', '')[:500]}
+
+Your task: Analyze the submission for specific evidence of competency regarding state standards for the defined Grade and Subject.
+
+Provide analysis in JSON format with these fields:
+{{
+    "standards_evidence": ["List specific evidence items aligned to grade-level standards"],
+    "grade_alignment": "Assessment of how well artifact aligns with grade-level expectations",
+    "competency_areas": ["Key demonstrated competencies"],
+    "growth_recommendations": ["Specific, actionable recommendations for advancing to next level"],
+    "rigor_analysis": "Assessment of cognitive demand and rigor",
+    "teacher_notes": "Summary notes for teacher review"
+}}
+"""
+        
+        # Call AI for competency analysis
+        competency_raw = await call_ai(
+            system_prompt="You are an expert K-12 educator analyzing student competency against state standards.",
+            user_prompt=competency_prompt,
+            image_b64=None,
+            max_tokens=1500,
+        )
+        
+        # Parse competency assessment
+        competency_data = _extract_json(competency_raw) or {
+            "standards_evidence": ["Unable to analyze standards evidence"],
+            "grade_alignment": "Analysis pending",
+            "competency_areas": [],
+            "growth_recommendations": ["Please review student work manually"],
+            "rigor_analysis": "Analysis pending",
+            "teacher_notes": "Competency assessment generation encountered an error",
+        }
+        
+        return competency_data
+        
+    except Exception as e:
+        # Return graceful error state
+        return {
+            "standards_evidence": [],
+            "grade_alignment": f"Error: {str(e)[:200]}",
+            "competency_areas": [],
+            "growth_recommendations": [],
+            "rigor_analysis": "Error in analysis",
+            "teacher_notes": f"Competency assessment failed: {str(e)[:300]}",
+        }
+
+
+# ─────────────────────────────────────────────────────────────
+# Internal helpers
+# ─────────────────────────────────────────────────────────────
 def _extract_pdf_text(content: bytes, filename: str) -> str:
     """Extract raw text from a PDF using pypdf (no embeddings)."""
     try:
@@ -785,8 +893,19 @@ def _extract_json(text: str) -> Optional[dict]:
         return None
 
 
-def _assessment_to_dict(r: Assessment) -> dict:
-    return {
+def _assessment_to_dict(r: Assessment, include_teacher_data: bool = False) -> dict:
+    """
+    Convert Assessment to dict.
+    
+    Args:
+        r: Assessment record
+        include_teacher_data: If True, include teacher-only fields like competency_assessment.
+                             If False (default), these fields are excluded for student API responses.
+    
+    Returns:
+        Dictionary with assessment data, filtered by role.
+    """
+    data = {
         "id": r.id,
         "student_name": r.student_name,
         "subject": r.subject,
@@ -805,3 +924,13 @@ def _assessment_to_dict(r: Assessment) -> dict:
         "created_at": r.created_at.isoformat(),
         "teacher_updated_at": r.teacher_updated_at.isoformat() if r.teacher_updated_at else None,
     }
+    
+    # FEATURE 1: Include original AI draft for teachers (for comparison with edited version)
+    if include_teacher_data:
+        data["original_ai_draft"] = r.original_ai_draft
+    
+    # FEATURE 2: Include competency assessment ONLY for teachers
+    if include_teacher_data and r.competency_assessment:
+        data["competency_assessment"] = r.competency_assessment
+    
+    return data

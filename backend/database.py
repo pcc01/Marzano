@@ -51,6 +51,14 @@ class Assessment(Base):
     feedback: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     raw_ai_response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    # FEATURE 1: AI Artifact Retention
+    # Immutable copy of the original AI-generated draft before any teacher intervention
+    original_ai_draft: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # FEATURE 2: Teacher-Only Competency Assessment
+    # Parallel AI assessment identifying evidence of meeting state standards (visible ONLY to teachers)
+    competency_assessment: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
     # Teacher review
     teacher_comments: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     teacher_edited_level: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)

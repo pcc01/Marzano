@@ -3,7 +3,7 @@
 > AI-powered educational assessment grounded in **Marzano's New Taxonomy of Educational Objectives**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4.1-blue)](https://github.com/pcc01/Marzano/blob/main/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](https://github.com/pcc01/Marzano/blob/main/CHANGELOG.md)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)](https://www.postgresql.org/)
@@ -41,6 +41,8 @@ A student passionate about **photography** demonstrates the same geometry standa
 | **Test suite** — 177 unit + e2e tests, 100% pass rate | ✅ |
 | **International mapping foundation** — 10 countries, grade equivalencies, Marzano ↔ PISA/IB/GCSE | ✅ |
 | **International classroom UI** — country selector, auto-localised grade, framework equivalency lookup | ✅ |
+| **[NEW v0.3.0] AI Artifact Retention** — Immutable copy of original AI draft for comparison | ✅ |
+| **[NEW v0.3.0] Teacher-Only Competency Assessment** — Standards alignment & evidence analysis (never exposed to students) | ✅ |
 | Batch assessment upload | 🔜 |
 | PDF export of approved feedback | 🔜 |
 | LMS integration (Canvas, Google Classroom) | 🔜 |
@@ -415,6 +417,107 @@ Full interactive docs at `http://localhost:8000/docs`.
 | `/health` | GET | AI provider info, RAG status, SSE subscriber count |
 | `/taxonomy` | GET | Full Marzano taxonomy |
 | `/passions` | GET | Passion-to-concept mapping |
+
+---
+
+## v0.3.0 Features — AI Artifact Retention & Teacher-Only Competency Assessment
+
+### Feature 1: AI Artifact Retention
+
+Every time the AI generates an assessment, the **original, immutable draft** is automatically stored in the `original_ai_draft` field. This enables:
+
+- **Transparency**: Teachers can see exactly what the AI said before any edits
+- **Comparison**: Toggle between the original AI draft and the teacher's final approved version
+- **Accountability**: Full audit trail of how feedback evolved from AI → teacher review
+
+**How it works:**
+1. Student submits artifact
+2. AI generates initial assessment → stored in `original_ai_draft`
+3. AI feedback also stored in standard `feedback` and `raw_ai_response`
+4. Teacher views in dashboard with "View Original AI Draft" toggle
+5. Teacher can edit, override, add comments
+6. Both versions are preserved permanently
+
+**API Note:** The `original_ai_draft` field is only visible to teachers via `/assessments/{id}`. Students never see this field.
+
+---
+
+### Feature 2: Teacher-Only Competency Assessment
+
+After generating the standard Marzano feedback, the system **automatically runs a second AI analysis** that identifies specific evidence of competency against state standards. This analysis is stored in `competency_assessment` and is **visible ONLY to teachers**.
+
+**What it includes:**
+- **standards_evidence**: Specific evidence items aligned to grade-level standards
+- **grade_alignment**: How well artifact meets grade-level expectations
+- **competency_areas**: Key demonstrated competencies
+- **growth_recommendations**: Specific, actionable next steps
+- **rigor_analysis**: Assessment of cognitive demand and rigor level
+- **teacher_notes**: Summary for quick teacher review
+
+**Security by Design:**
+
+```python
+# Student API — competency_assessment EXCLUDED
+GET /student/status/{id}  # ✗ No competency_assessment
+GET /student/submit  # ✓ Returns to student immediately
+
+# Teacher API — competency_assessment INCLUDED
+GET /assessments/{id}  # ✓ Full competency_assessment included
+PATCH /assessments/{id}  # ✓ Teacher can review and edit with competency data
+```
+
+**In the Dashboard:**
+- Teachers see a new "📊 Standards Alignment" card below AI Reasoning
+- Card displays structured evidence, alignment, competencies, and recommendations
+- Uses the same design language as other assessment cards
+- Collapsible sections for easy scanning
+
+---
+
+## Database Schema Updates (v0.3.0)
+
+The `assessments` table now includes:
+
+```sql
+-- FEATURE 1: Immutable original AI draft
+original_ai_draft TEXT NULL,
+
+-- FEATURE 2: Teacher-only competency assessment
+competency_assessment JSONB NULL,
+```
+
+The competency assessment is stored as JSONB for efficient querying:
+
+```json
+{
+  "standards_evidence": ["Evidence 1", "Evidence 2"],
+  "grade_alignment": "Description",
+  "competency_areas": ["Area 1", "Area 2"],
+  "growth_recommendations": ["Rec 1", "Rec 2"],
+  "rigor_analysis": "Description",
+  "teacher_notes": "Summary"
+}
+```
+
+---
+
+## Testing (v0.3.0)
+
+New test file: `tests/test_features_v2.py`
+
+Tests include:
+- ✅ Original AI draft is stored on assessment creation
+- ✅ Original draft is included in teacher GET response
+- ✅ Competency assessment is generated after initial assessment
+- ✅ Competency assessment is included in teacher endpoints
+- ✅ Competency assessment is **excluded** from student endpoints
+- ✅ All required competency fields are present and properly formatted
+- ✅ Integration test: full workflow with both features
+
+Run tests:
+```bash
+pytest tests/test_features_v2.py -v
+```
 
 ---
 

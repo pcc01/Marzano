@@ -5,6 +5,75 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.0] — 2026-04-24
+
+### Added
+
+**FEATURE 1: AI Artifact Retention — Immutable Original Draft**
+
+- New database field `original_ai_draft` (TEXT) stores the raw AI response before any teacher edits
+- When an assessment is created, the original AI draft is automatically captured and stored immutably
+- Teachers can view and compare the original draft vs. their edits using "View Original AI Draft" toggle in the UI
+- Original draft is only visible to teachers; students never see this field
+- Updated `_assessment_to_dict()` to include `original_ai_draft` only when `include_teacher_data=True`
+- Provides full audit trail and transparency in teacher review workflow
+
+**FEATURE 2: Teacher-Only Competency Assessment — Standards Alignment Analysis**
+
+- New database field `competency_assessment` (JSONB) stores AI-generated standards evidence analysis
+- After creating main assessment, system automatically runs second AI analysis to identify:
+  - Specific evidence of competency against state standards
+  - Grade-level alignment assessment
+  - Key demonstrated competencies
+  - Growth recommendations
+  - Cognitive demand & rigor analysis
+  - Summary notes for teacher
+- New helper function `_generate_competency_assessment()` orchestrates the competency analysis
+- Standards Alignment card (📊) added to teacher dashboard review panel
+- Displays structured evidence, competency areas, growth recommendations
+- **Security enforced**: `competency_assessment` is excluded from `/student/*` endpoints
+- `competency_assessment` only included in teacher `/assessments/{id}` GET endpoint
+- Tests verify that students cannot access competency data via any API route
+
+**Database Schema Updates**
+
+- `assessments` table adds two new columns:
+  - `original_ai_draft TEXT NULL` — immutable copy of raw AI response
+  - `competency_assessment JSONB NULL` — teacher-only standards analysis
+- Migration: new columns are nullable for backward compatibility with legacy records
+
+**Frontend UI Updates**
+
+- New "Original AI Draft" card with toggle button to show/hide raw AI response
+- New "Standards Alignment" card showing competency assessment data:
+  - Evidence of standards competency (bulleted list)
+  - Grade-level alignment (text)
+  - Demonstrated competencies (bulleted list)
+  - Growth recommendations (bulleted list)
+  - Cognitive demand & rigor analysis (text)
+  - Summary for teacher (italic text)
+- Both cards appear in teacher review panel between "AI Reasoning" and "Teacher Review"
+- New `toggleOriginalDraft()` JavaScript function for show/hide functionality
+
+**Testing**
+
+- New test file `tests/test_features_v2.py` with 11 test cases
+- Tests verify original_ai_draft is stored and retrieved
+- Tests verify competency_assessment is generated with all required fields
+- Tests verify competency_assessment is excluded from student API responses
+- Tests verify competency_assessment is included in teacher API responses
+- Integration test covers full assessment workflow with both features
+
+**Documentation**
+
+- README updated with v0.3.0 feature description (AI Artifact Retention & Competency Assessment)
+- Added "v0.3.0 Features" section with detailed explanation of both features
+- API reference updated with security notes about teacher-only fields
+- Database schema updates documented with JSONB structure example
+- Testing guide includes instructions for running new feature tests
+
+---
+
 ## [0.4.1] — 2026-04-18
 
 ### Fixed

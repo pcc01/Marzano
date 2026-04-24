@@ -479,6 +479,62 @@
         <div class="reasoning" id="rv-reasoning"></div>
       </div>
 
+      <!-- FEATURE 1: View Original AI Draft -->
+      <div class="card" id="original-draft-card" style="display:none">
+        <div class="card-title">Original AI Draft</div>
+        <p style="font-size:12px; color:var(--muted); margin-bottom:12px">
+          This is the AI's initial assessment before any edits. Compare it with your review to see what changed.
+        </p>
+        <button class="btn btn-secondary" onclick="toggleOriginalDraft()" style="width:100%;margin-bottom:12px">
+          <span id="draft-toggle-text">Show Original Draft</span>
+        </button>
+        <div id="original-draft-content" style="display:none; background:var(--bg); padding:12px; border-radius:8px; font-size:12px; max-height:300px; overflow-y:auto; white-space:pre-wrap; word-break:break-word; font-family:monospace; color:var(--muted)"></div>
+      </div>
+
+      <!-- FEATURE 2: Standards Alignment (Teacher-Only Competency Assessment) -->
+      <div class="card" id="competency-card" style="display:none">
+        <div class="card-title">📊 Standards Alignment</div>
+        <p style="font-size:12px; color:var(--muted); margin-bottom:12px">
+          Evidence of competency against grade-level state standards (teacher-only analysis)
+        </p>
+        
+        <!-- Standards Evidence -->
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Evidence of Standards Competency</h4>
+          <ul id="competency-evidence" style="margin-top:8px; padding-left:20px; font-size:12px"></ul>
+        </div>
+
+        <!-- Grade Alignment -->
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Grade-Level Alignment</h4>
+          <p id="competency-alignment" style="font-size:12px"></p>
+        </div>
+
+        <!-- Competency Areas -->
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Demonstrated Competencies</h4>
+          <ul id="competency-areas" style="margin-top:8px; padding-left:20px; font-size:12px"></ul>
+        </div>
+
+        <!-- Growth Recommendations -->
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Growth Recommendations</h4>
+          <ul id="competency-growth" style="margin-top:8px; padding-left:20px; font-size:12px"></ul>
+        </div>
+
+        <!-- Rigor Analysis -->
+        <div class="summary-box" style="margin-bottom:12px">
+          <h4>Cognitive Demand & Rigor</h4>
+          <p id="competency-rigor" style="font-size:12px"></p>
+        </div>
+
+        <!-- Teacher Notes -->
+        <div class="summary-box">
+          <h4>Summary for Teacher</h4>
+          <p id="competency-notes" style="font-size:12px; font-style:italic; color:var(--muted)"></p>
+        </div>
+      </div>
+
       <div class="teacher-section">
         <h3>✏ Teacher Review</h3>
         <div class="form-group"><label>Your Comments</label>
@@ -1040,6 +1096,57 @@ async function loadReview(id) {
         </div>
         <div class="taxonomy-body"><strong>Evidence</strong>${esc(item.evidence)}</div>
       </div>`).join('') || '<p style="color:var(--muted);font-size:13px">No breakdown available.</p>';
+
+    // FEATURE 1: Display Original AI Draft
+    const draftCard = document.getElementById('original-draft-card');
+    if (d.original_ai_draft) {
+      draftCard.style.display = 'block';
+      document.getElementById('original-draft-content').textContent = d.original_ai_draft;
+    } else {
+      draftCard.style.display = 'none';
+    }
+
+    // FEATURE 2: Display Standards Alignment (Competency Assessment)
+    const competencyCard = document.getElementById('competency-card');
+    if (d.competency_assessment) {
+      const ca = d.competency_assessment;
+      competencyCard.style.display = 'block';
+      
+      // Evidence of standards
+      const evidenceList = document.getElementById('competency-evidence');
+      if (ca.standards_evidence && Array.isArray(ca.standards_evidence)) {
+        evidenceList.innerHTML = ca.standards_evidence.map(e => `<li>${esc(e)}</li>`).join('');
+      } else {
+        evidenceList.innerHTML = '<li style="color:var(--muted)">No evidence recorded.</li>';
+      }
+      
+      // Grade alignment
+      document.getElementById('competency-alignment').textContent = ca.grade_alignment || '—';
+      
+      // Competency areas
+      const areasUl = document.getElementById('competency-areas');
+      if (ca.competency_areas && Array.isArray(ca.competency_areas)) {
+        areasUl.innerHTML = ca.competency_areas.map(a => `<li>${esc(a)}</li>`).join('');
+      } else {
+        areasUl.innerHTML = '<li style="color:var(--muted)">No competencies identified.</li>';
+      }
+      
+      // Growth recommendations
+      const growthUl = document.getElementById('competency-growth');
+      if (ca.growth_recommendations && Array.isArray(ca.growth_recommendations)) {
+        growthUl.innerHTML = ca.growth_recommendations.map(g => `<li>${esc(g)}</li>`).join('');
+      } else {
+        growthUl.innerHTML = '<li style="color:var(--muted)">No recommendations.</li>';
+      }
+      
+      // Rigor analysis
+      document.getElementById('competency-rigor').textContent = ca.rigor_analysis || '—';
+      
+      // Teacher notes
+      document.getElementById('competency-notes').textContent = ca.teacher_notes || '—';
+    } else {
+      competencyCard.style.display = 'none';
+    }
   } catch(err) {
     alert.className = 'alert alert-error';
     alert.textContent = '⚠ ' + err.message;
@@ -1288,6 +1395,21 @@ function sysClass(s) {
 }
 function rClass(r) {
   return { advanced:'r-advanced', proficient:'r-proficient', developing:'r-developing', emerging:'r-emerging' }[(r||'').toLowerCase()] || 'r-not';
+}
+
+// FEATURE 1: Toggle Original AI Draft visibility
+function toggleOriginalDraft() {
+  const content = document.getElementById('original-draft-content');
+  const btnText = document.getElementById('draft-toggle-text');
+  const isHidden = content.style.display === 'none';
+  
+  if (isHidden) {
+    content.style.display = 'block';
+    btnText.textContent = 'Hide Original Draft';
+  } else {
+    content.style.display = 'none';
+    btnText.textContent = 'Show Original Draft';
+  }
 }
 
 // ─── International ───
