@@ -1,4 +1,3 @@
-version: "3.9"
 
 # ── AI provider selection ───────────────────────────────────────────────────
 # Set AI_PROVIDER=anthropic in .env  →  uses the Anthropic API (default)
@@ -35,9 +34,12 @@ services:
   # ── Backend API ────────────────────────────────────────────────────────────
   backend:
     build: ./backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file: .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://marzano:marzano@postgres:5432/marzano
+      - OLLAMA_HOST=http://host.docker.internal:11434   # for AI_PROVIDER=ollama, allows backend to reach Ollama on the host machine
       - RAG_INDEX_PATH=/data/marzano_index.json
       - DATA_DIR=/data
     volumes:
@@ -49,9 +51,9 @@ services:
       postgres:
         condition: service_healthy
       # Uncomment the line below when using Ollama so the backend waits for it:
-      # ollama:
+     # ollama:
       #   condition: service_healthy
-    restart: unless-stopped
+    #restart: unless-stopped 
 
   # ── Frontend (nginx) ───────────────────────────────────────────────────────
   frontend:
@@ -69,29 +71,31 @@ services:
   # Uncomment this entire block to run AI locally without an API key.
   # Requires Docker Desktop with enough RAM: llama3 ≈ 5 GB, llava ≈ 4 GB.
   #
-  # ollama:
-  #   image: ollama/ollama
+
+#  ollama:
+ #  image: ollama/ollama
   #   volumes:
-  #     - ollama_models:/root/.ollama
-  #   ports:
-  #     - "11434:11434"
-  #   healthcheck:
-  #     test: ["CMD", "ollama", "list"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 12
-  #     start_period: 30s
-  #   restart: unless-stopped
+   #    - ollama_models:/root/.ollama
+    # ports:
+     #  - "11434:11434"
+     #healthcheck:
+     #3  test: ["CMD", "ollama", "list"]
+       #interval: 10s
+       #timeout: 5s
+      # retries: 12
+       #start_period: 30s
+     #restart: unless-stopped
   #   # GPU support (Nvidia) — remove if running CPU-only:
-  #   deploy:
-  #     resources:
+#     deploy:
+ #      resources:
   #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: all
-  #             capabilities: [gpu]
+   #        devices:
+    #         - driver: nvidia
+     #          count: all
+      #         capabilities: [gpu]
 
 volumes:
   postgres_data:
   rag_data:
-  # ollama_models:   # uncomment when using Ollama
+  ollama_models:   # uncomment when using Ollama
+

@@ -26,6 +26,7 @@ env/
 marzano_index.json
 *.faiss
 *.pkl
+apply_license.py
 
 # Docker
 .docker/
