@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Paul Christopher Cerda
+# This source code is licensed under the Business Source License 1.1
+# found in the LICENSE.md file in the root directory of this source tree.
+
 """
 PostgreSQL database layer — SQLAlchemy 2.0 async style.
 Tables: assessments, ingestion_jobs, notifications
